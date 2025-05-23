@@ -1,0 +1,29 @@
+<div class="right-panel-container" [style.display]="activePanel ? 'block' : 'none'">
+  <div class="panel-header" (mousedown)="startResize($event)">
+    <div class="drag-handle"></div>
+  </div>
+  
+  <div class="panel-content" *ngIf="activePanel" [style.width.px]="panels[activePanel].width">
+    <app-collaborator *ngIf="activePanel === 'collaborator'" [mode]="collaboratorMode"></app-collaborator>
+    <app-chat *ngIf="activePanel === 'chat'"></app-chat>
+    <app-video *ngIf="activePanel === 'video'"></app-video>
+  </div>
+</div>
+
+<div class="collaboration-toolbar">
+  <ng-container *ngFor="let item of collaborationItems">
+    <div *ngIf="item.id === 'collaborator'" class="dropdown" style="position: relative;">
+      <button class="btn" [title]="item.title" type="button" (click)="onCollabDropdownClick($event)">
+        <i class="bi bi-{{item.icon}}"></i>
+      </button>
+      <ul class="dropdown-menu show" *ngIf="activeDropdown === 'collaborator'" style="display: block; position: absolute;">
+        <li *ngFor="let option of item.options">
+          <a class="dropdown-item" href="#" (click)="handleCollabOption(option)">{{ option }}</a>
+        </li>
+      </ul>
+    </div>
+    <button *ngIf="item.id !== 'collaborator'" class="btn" [title]="item.title" (click)="onPanelClick(item.id)">
+      <i class="bi bi-{{item.icon}}"></i>
+    </button>
+  </ng-container>
+</div>

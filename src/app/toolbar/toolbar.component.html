@@ -1,0 +1,26 @@
+<div class="toolbar-container">
+  <div class="btn-toolbar justify-content-between">
+    <div class="d-flex align-items-center">
+      <ng-container *ngFor="let item of leftToolbarItems">
+        <div class="divider" *ngIf="item.divider"></div>
+        <button class="btn" [title]="item.title" *ngIf="!item.divider"
+          (click)="onToolbarClick(item)">
+          <i class="bi bi-{{item.icon}}"></i>
+        </button>
+      </ng-container>
+      <input type="file" id="toolbar-file-input" style="display:none" (change)="onFileSelected($event)" />
+    </div>
+    <div class="d-flex align-items-center">
+      <app-right-panel></app-right-panel>
+      <div class="divider"></div>
+      <select class="btn" [ngStyle]="{width: '120px', marginRight: '8px'}" [value]="selectedLanguage" (change)="onLanguageChange($event)">
+        <option *ngFor="let lang of languages" [value]="lang">{{ lang | titlecase }}</option>
+      </select>
+      <ng-container *ngFor="let item of rightToolbarItems">
+        <button class="btn" [title]="item.title" (click)="onToolbarClick(item)">
+          <i class="bi bi-{{item.icon}}"></i>
+        </button>
+      </ng-container>
+    </div>
+  </div>
+</div>

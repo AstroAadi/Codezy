@@ -1,0 +1,28 @@
+
+  <div class="chat-container">
+    <div class="chat-messages" #scrollContainer>
+      <div class="message" *ngFor="let message of messages" 
+           [class.own-message]="isOwnMessage(message)">
+        <div class="message-content">
+          <div class="message-header">
+            <span class="sender">{{ formatSenderName(message) }}</span>
+            <span class="timestamp">{{ message.timestamp | date:'shortTime' }}</span>
+          </div>
+          <div class="message-text">{{ message.text }}</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="chat-input">
+      <input 
+        type="text" 
+        class="form-control" 
+        [(ngModel)]="newMessage"
+        (keyup.enter)="sendMessage()"
+        placeholder="Type a message..."
+      >
+      <button class="btn btn-primary send-button" (click)="sendMessage()">
+        <i class="bi bi-send"></i>
+      </button>
+    </div>
+  </div>

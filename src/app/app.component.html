@@ -1,0 +1,45 @@
+<ng-container *ngIf="!isAuthRoute">
+  <app-navbar></app-navbar>
+  <app-toolbar
+    (toggleExplorer)="toggleExplorer()"
+    (newFile)="projectExplorer.startAdd('file')"
+    (addFolder)="projectExplorer.startAdd('folder')"
+    (openFile)="onToolbarFileSelected($event)"
+    (languageChange)="onToolbarLanguageChange($event)"
+    (run)="onRun()"
+  ></app-toolbar>
+  <div class="main-layout">
+    <div class="sidebar-area"
+         [style.width.px]="isExplorerOpen ? explorerWidth : 0"
+         [class.closed]="!isExplorerOpen"
+         (mousemove)="onSidebarMouseMove($event)"
+         (mouseleave)="onSidebarMouseLeave()">
+      <app-project-explorer
+        #projectExplorer
+        [files]="fileNodes"
+        (fileSelected)="onSidebarFileSelected($event)"
+        (addFile)="onAddFile($event)"
+        (addFolder)="onAddFolder($event)">
+      </app-project-explorer>
+      <div
+        class="sidebar-resize-bar"
+        (mousedown)="startSidebarResize($event)"
+        [class.active]="isResizing"
+        (mouseenter)="showResizeArrows = true"
+        (mouseleave)="showResizeArrows = false"
+      >
+        <span class="resize-arrow" *ngIf="showResizeArrows">&#x2194;</span>
+      </div>
+    </div>
+    <div class="content-area">
+      <app-code-editor [file]="selectedFile" (codeChange)="onCodeChanged($event)"></app-code-editor>
+      <!-- Remove app-code-runner -->
+      <app-bottom-panel
+        [outputText]="outputText"
+        [activePanel]="activeBottomPanel"
+        (activePanelChange)="onBottomPanelToggle($event)">
+      </app-bottom-panel>
+    </div>
+  </div>
+</ng-container>
+<router-outlet *ngIf="isAuthRoute"></router-outlet>

@@ -1,0 +1,94 @@
+.bottom-panel-container {
+  position: fixed;
+  bottom: 48px;
+  left: 0;
+  right: 0;
+  background-color: #2b2b2b;
+  border-top: 1px solid #323232;
+  z-index: 1000;
+  overflow: hidden;
+  height: auto;
+  max-height: 40vh;
+}
+
+.panel-content {
+  overflow-y: auto; /* Allow vertical scrolling */
+  overflow-x: hidden;
+  transition: height 0.2s;
+  background-color: #2b2b2b;
+  height: 100%;
+  min-height: 0;
+}
+
+.content-wrapper {
+  padding: 12px;
+  color: #afb1b3;
+  font-family: monospace;
+  font-size: 13px;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto; /* Allow vertical scrolling */
+  overflow-x: hidden;
+}
+
+.bottom-toolbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #3c3f41;
+  border-top: 1px solid #323232;
+  padding: 4px;
+  display: flex;
+  justify-content: flex-start;
+  z-index: 1001;
+}
+
+.btn-tool {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 0;
+  background-color: transparent;
+  border: none;
+  color: #afb1b3;
+}
+
+.btn-tool:hover {
+  background-color: #4c5052;
+  color: #fff;
+}
+
+.tool-label {
+  font-size: 12px;
+}
+
+.btn-group {
+  display: flex;
+}
+
+.btn-group .btn {
+  border-right: 1px solid #323232;
+}
+
+.btn-group .btn:last-child {
+  border-right: none;
+}
+.panel-resize-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.resize-arrow {
+  font-size: 18px;
+  color: #afb1b3;
+  pointer-events: none;
+}

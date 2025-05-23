@@ -1,0 +1,41 @@
+<!-- register.component.html -->
+<div class="login-overlay">
+  <div class="register-container">
+    <span class="close-icon" (click)="navigateHome()" title="Close">
+      <i class="bi bi-x-lg"></i>
+    </span>
+    <h2>Register</h2>
+    <form (ngSubmit)="onRegister()">
+      <div>
+        <label for="name">Name</label>
+        <input id="name" type="text" [(ngModel)]="name" name="name" required />
+      </div>
+      <div>
+        <label for="email">Email</label>
+        <input id="email" type="email" [(ngModel)]="email" name="email" required />
+        <button type="button" (click)="getOtp()">Get OTP</button>
+      </div>
+      <div *ngIf="otpSent">
+        <label for="otp">OTP</label>
+        <input id="otp" type="text" [(ngModel)]="otp" name="otp" required />
+        <button type="button" (click)="verifyOtp()">Verify OTP</button>
+        <span *ngIf="otpVerified" style="color:green;">OTP Verified!</span>
+        <span *ngIf="otpError" class="error-message">{{ otpError }}</span>
+      </div>
+      <div>
+        <label for="password">Password</label>
+        <input id="password" type="password" [(ngModel)]="password" name="password" required />
+      </div>
+      <div>
+        <label for="confirmPassword">Confirm Password</label>
+        <input id="confirmPassword" type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required />
+      </div>
+      <button type="submit" [disabled]="!otpVerified">Register</button>
+    </form>
+    <div *ngIf="error" class="error-message">{{ error }}</div>
+    <p class="register-link">
+      Already registered? <a routerLink="/login">Login here</a>
+    </p>
+  </div>
+</div>
+  

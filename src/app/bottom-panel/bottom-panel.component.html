@@ -1,0 +1,27 @@
+<div class="bottom-panel-container" [style.display]="activePanel ? 'block' : 'none'">
+  <div class="panel-resize-bar" (mousedown)="startResize($event)" (mouseenter)="showResizeArrow = true" (mouseleave)="showResizeArrow = false">
+    <span class="resize-arrow" *ngIf="showResizeArrow"></span>
+  </div>
+  <div class="panel-header">
+    <div class="drag-handle"></div>
+  </div>
+  <div class="panel-content" *ngIf="activePanel && panels[activePanel]" [style.height.px]="panels[activePanel].height">
+    <div class="content-wrapper" *ngIf="activePanel !== 'output'">
+      {{ getPanelContent(activePanel) }}
+    </div>
+    <div *ngIf="activePanel === 'output'" style="height:100%;width:100%;overflow:auto;">
+      <app-output-panel style="height:100%;width:100%;display:block;"></app-output-panel>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-toolbar">
+  <div class="btn-group">
+    <ng-container *ngFor="let item of bottomToolbarItems">
+      <button class="btn btn-tool" [title]="item.title" (click)="togglePanel(item.id)">
+        <i class="bi bi-{{item.icon}}"></i>
+        <span class="tool-label">{{item.label}}</span>
+      </button>
+    </ng-container>
+  </div>
+</div>

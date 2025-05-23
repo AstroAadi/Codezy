@@ -1,0 +1,36 @@
+<nav class="navbar navbar-expand-lg">
+  <div class="container-fluid px-2">
+    <a class="navbar-brand py-0" href="#">
+      <i class="bi bi-code-square"></i> Codezy
+    </a>
+    <div class="navbar-collapse">
+      <ul class="navbar-nav">
+        <li class="nav-item dropdown" *ngFor="let item of menuItems">
+          <a class="nav-link py-1" href="#" [id]="item.title + 'Dropdown'" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            {{ item.title }}
+          </a>
+          <ul class="dropdown-menu" [attr.aria-labelledby]="item.title + 'Dropdown'">
+            <li *ngFor="let option of item.options">
+              <a class="dropdown-item" href="#" (click)="handleOptionClick(item.title, option)">{{ option }}</a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+  <div class="navbar-nav ml-auto" style="gap: 10px; align-items: center;">
+    <ng-container *ngIf="user$ | async as user; else loginLinks">
+      <span class="nav-link">{{ user }}</span>
+      <div class="navbar-actions">
+        <button class="btn theme-toggle" (click)="toggleTheme()">
+          <span *ngIf="isDarkMode">☀️</span>
+          <span *ngIf="!isDarkMode">🌙</span>
+        </button>
+      </div>
+      <a class="nav-link" href="#" (click)="logout()">Logout</a>
+    </ng-container>
+    <ng-template #loginLinks>
+      <a class="nav-link" routerLink="/login">Login/Register</a>
+    </ng-template>
+  </div>
+</nav>

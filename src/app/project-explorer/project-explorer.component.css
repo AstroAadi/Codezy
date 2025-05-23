@@ -1,0 +1,116 @@
+.sidebar-container {
+  width: 100%;
+  background: #23272e;
+  color: #fff;
+  height: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 0.75rem;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.12);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.2s;
+  overflow: hidden;
+  position: relative;
+}
+
+.file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0; /* sharp edges */
+  margin-bottom: 2px;
+  background: #353a40;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  cursor: pointer;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.18s;
+  border: 1px solid #3c4147;
+  position: relative;
+}
+
+.file-item.folder-item {
+  font-weight: bold;
+}
+
+.file-item:hover {
+  background: #444b54;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  transform: translateY(-1px) scale(1.01);
+}
+
+.file-item .add-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #8ecae6;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.file-item .add-btn:hover {
+  color: #219ebc;
+}
+
+.file-item input {
+  margin-left: 8px;
+  width: 90px;
+  font-size: 0.95em;
+  padding: 2px 4px;
+}
+
+.file-item.child {
+  padding-left: 16px;
+}
+
+.file-item i {
+  margin-right: 0.5rem;
+  font-size: 1.05rem;
+}
+
+.empty-message {
+  color: #aaa;
+  font-size: 0.92rem;
+  padding: 0.7rem 0.5rem;
+  text-align: center;
+}
+
+/* --- Sidebar Resize Bar --- */
+.sidebar-resize-bar {
+  position: absolute;
+  top: 0;
+  right: -6px;
+  width: 12px;
+  height: 100%;
+  cursor: ew-resize;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s;
+  background: transparent;
+}
+
+.sidebar-resize-bar:hover,
+.sidebar-resize-bar.active {
+  background: rgba(120, 180, 255, 0.08);
+}
+
+.sidebar-resize-bar .resize-arrow {
+  font-size: 18px;
+  color: #8ecae6;
+  opacity: 0.8;
+  pointer-events: none;
+  user-select: none;
+}
+
+.file-item.selected {
+  background-color: #4a90e2; /* Change to your preferred highlight color */
+  color: #fff; /* Ensure text is readable on the new background */
+  border: 1px solid #357ab8; /* Optional: Add a border for emphasis */
+}

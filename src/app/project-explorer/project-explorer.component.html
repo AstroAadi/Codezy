@@ -1,0 +1,52 @@
+<div class="sidebar-container">
+  <h4 class="sidebar-title">Files</h4>
+  <ul class="file-list">
+    <ng-container *ngFor="let file of files">
+      <ng-container *ngTemplateOutlet="renderNode; context: { $implicit: file, level: 0, parent: null }"></ng-container>
+    </ng-container>
+    <li *ngIf="files.length === 0" class="empty-message">No files uploaded</li>
+  </ul>
+  <div
+    class="sidebar-resize-bar"
+    (mousedown)="startSidebarResize($event)"
+    (mouseenter)="showResizeArrows = true"
+    (mouseleave)="showResizeArrows = false"
+    [class.active]="isResizing"
+  >
+    <span class="resize-arrow" *ngIf="showResizeArrows">&#x2194;</span>
+  </div>
+</div>
+
+<ng-template #renderNode let-node let-level="level" let-parent="parent">
+  <li class="file-item"
+      [class.folder-item]="node.type === 'folder'"
+      [class.selected]="node === selectedNode" 
+      [style.paddingLeft.px]="level * 20"
+      (click)="onFileClick(node, $event)">
+    <ng-container *ngIf="node.isEditingName">
+      <input [(ngModel)]="node.name" 
+             (keydown.enter)="finishAdd(node, parent ? parent : level > 0 ? node.parent : undefined)" 
+             (blur)="$event.target !== document.activeElement && finishAdd(node, parent ? parent : level > 0 ? node.parent : undefined)" 
+             #inputElement
+             autofocus />
+      <button (click)="finishAdd(node, parent ? parent : level > 0 ? node.parent : undefined); $event.preventDefault();">✔</button>
+      <button (click)="cancelAdd(parent ? parent : level > 0 ? node.parent : undefined); $event.preventDefault();">✖</button>
+    </ng-container>
+    <ng-container *ngIf="!node.isEditingName">
+      <span *ngIf="node.type === 'folder'" (click)="node.isExpanded = !node.isExpanded">📁</span>
+      <span *ngIf="node.type === 'file'">📄</span>
+      {{ node.name }}
+      <!-- Small add buttons for folders, only if no child is being edited -->
+      <span *ngIf="canShowAddButtons(node)">
+        <button style="font-size:10px;padding:2px 5px;margin-left:4px;" (click)="startAdd('file', node); $event.stopPropagation();">＋</button>
+        <button style="font-size:10px;padding:2px 5px;margin-left:2px;" (click)="startAdd('folder', node); $event.stopPropagation();">📁＋</button>
+      </span>
+    </ng-container>
+  </li>
+  <ul class="file-list" *ngIf="node.type === 'folder' && node.isExpanded && node.children">
+    <ng-container *ngFor="let child of node.children">
+      <ng-container *ngTemplateOutlet="renderNode; context: { $implicit: child, level: level + 1, parent: node }"></ng-container>
+    </ng-container>
+  </ul>
+</ng-template>
+<input type="file" id="explorer-file-input" style="display:none" (change)="onFileInputChange($event)">

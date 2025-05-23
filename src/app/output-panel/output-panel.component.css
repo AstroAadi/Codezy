@@ -1,0 +1,36 @@
+.output-panel {
+  background: linear-gradient(135deg, #232526 0%, #414345 100%);
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.output-header {
+  color: #fff;
+  background: rgba(30,34,40,0.95);
+  font-size: 1.25rem;
+  font-weight: 600;
+  padding: 16px 28px 12px 20px;
+  border-bottom: 1.5px solid #333;
+  display: flex;
+  align-items: center;
+  letter-spacing: 1px;
+}
+.output-icon {
+  font-size: 1.3rem;
+  margin-right: 10px;
+}
+.terminal-container {
+  flex: 1;
+  background: #181818;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  overflow: auto;
+  padding: 18px 18px 12px 18px;
+  font-family: 'Fira Mono', 'Consolas', monospace;
+  font-size: 1.05rem;
+  color: #e0e0e0;
+}

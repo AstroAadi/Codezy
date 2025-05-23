@@ -1,0 +1,16 @@
+/* Global styles */
+body {
+  background-color: #2b2b2b;
+  color: #fff;
+  margin: 0;
+  padding: 0;
+}
+body.dark-theme,
+body.dark-theme * {
+  background: #b5d1ec !important;
+  color: #292020 !important;
+}
+body.dark-theme .navbar, body.dark-theme .sidebar, body.dark-theme .panel {
+  background: #b5d1ec !important;
+}
+
