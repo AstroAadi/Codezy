@@ -4,10 +4,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 @Component({
-  selector: 'app-output-panel',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './output-panel.component.html'
+    selector: 'app-output-panel',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './output-panel.component.html'
 })
 export class OutputPanelComponent {
   @Input() code: string = '';

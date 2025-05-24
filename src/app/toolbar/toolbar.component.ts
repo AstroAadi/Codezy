@@ -4,11 +4,10 @@ import { RightPanelComponent } from '../right-panel/right-panel.component';
 import { ToolbarActionsService } from '../services/toolbar-actions.service';
 
 @Component({
-  selector: 'app-toolbar',
-  standalone: true,
-  imports: [CommonModule, RightPanelComponent],
-  templateUrl: './toolbar.component.html',
-  styleUrls: ['./toolbar.component.css']
+    selector: 'app-toolbar',
+    imports: [CommonModule, RightPanelComponent],
+    templateUrl: './toolbar.component.html',
+    styleUrls: ['./toolbar.component.css']
 })
 export class ToolbarComponent {
   @Output() toggleExplorer = new EventEmitter<void>();

@@ -15,11 +15,10 @@ interface PanelState {
 type PanelType = 'collaborator' | 'chat' | 'video';
 
 @Component({
-  selector: 'app-right-panel',
-  standalone: true,
-  imports: [CommonModule, ChatComponent, VideoComponent, CollaboratorComponent, RouterModule],
-  templateUrl: './right-panel.component.html',
-  styleUrls: ['./right-panel.component.css']
+    selector: 'app-right-panel',
+    imports: [CommonModule, ChatComponent, VideoComponent, CollaboratorComponent, RouterModule],
+    templateUrl: './right-panel.component.html',
+    styleUrls: ['./right-panel.component.css']
 })
 export class RightPanelComponent {
   collaboratorMode: 'create' | 'join' | null = null;

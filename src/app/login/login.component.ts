@@ -6,11 +6,10 @@ import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
 @Component({
-  selector: 'app-login',
-  standalone: true,
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css', '../navbar/navbar.component.css'], // include your theme CSS
-  imports:[FormsModule, CommonModule, RouterModule]
+    selector: 'app-login',
+    templateUrl: './login.component.html',
+    styleUrls: ['./login.component.css', '../navbar/navbar.component.css'], // include your theme CSS
+    imports: [FormsModule, CommonModule, RouterModule]
 })
 export class LoginComponent {
   userId: string = '';

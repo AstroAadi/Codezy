@@ -13,11 +13,10 @@ interface ChatMessage {
 }
 
 @Component({
-  selector: 'app-chat',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
-  templateUrl: './chat.component.html',
-  styleUrls: ['./chat.component.css']
+    selector: 'app-chat',
+    imports: [CommonModule, FormsModule, RouterModule],
+    templateUrl: './chat.component.html',
+    styleUrls: ['./chat.component.css']
 })
 export class ChatComponent implements OnInit {
   messages: ChatMessage[] = [];
