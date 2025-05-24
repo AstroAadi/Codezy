@@ -6,10 +6,9 @@ import { ActivatedRoute } from '@angular/router';
 import { WebsocketService } from '../services/websocket.service';
 
 @Component({
-  selector: 'app-collaborator',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
+    selector: 'app-collaborator',
+    imports: [CommonModule, FormsModule],
+    template: `
     <div class="collaborator-container">
       <ng-container *ngIf="mode === 'create'">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -69,7 +68,7 @@ import { WebsocketService } from '../services/websocket.service';
       </ng-container>
     </div>
   `,
-  styles: [`
+    styles: [`
     .collaborator-container {
       padding: 16px;
       color: #afb1b3;

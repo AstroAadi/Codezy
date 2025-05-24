@@ -7,10 +7,10 @@ body {
 }
 body.dark-theme,
 body.dark-theme * {
-  background: #b5d1ec !important;
+  background: #ffffff !important;
   color: #292020 !important;
 }
 body.dark-theme .navbar, body.dark-theme .sidebar, body.dark-theme .panel {
-  background: #b5d1ec !important;
+  background: #ffffff !important;
 }
 

@@ -9,11 +9,10 @@ import { ThemeService } from '../services/theme.service';
 import { BottomPanelComponent } from '../bottom-panel/bottom-panel.component';
 
 @Component({
-  selector: 'app-navbar',
-  standalone: true,
-  imports: [CommonModule, RouterModule],
-  templateUrl: './navbar.component.html',
-  styleUrls: ['./navbar.component.css']
+    selector: 'app-navbar',
+    imports: [CommonModule, RouterModule],
+    templateUrl: './navbar.component.html',
+    styleUrls: ['./navbar.component.css']
 })
 export class NavbarComponent {
   @ViewChild(BottomPanelComponent) bottomPanel!: BottomPanelComponent;

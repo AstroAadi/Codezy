@@ -4,10 +4,9 @@ import { WebsocketService } from '../services/websocket.service';
 import { CollaborationService } from '../services/collaboration.service';
 
 @Component({
-  selector: 'app-video',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'app-video',
+    imports: [CommonModule],
+    template: `
     <div class="video-container">
       <div class="video-content" *ngIf="!isCallActive">
         <h3 class="text-center mb-4">Start a Video Call</h3>
@@ -34,8 +33,8 @@ import { CollaborationService } from '../services/collaboration.service';
       </div>
     </div>
   `,
-  styles: [
-    `.video-container {
+    styles: [
+        `.video-container {
       height: 100%;
       padding: 20px;
       background-color: #2b2b2b;
@@ -88,7 +87,8 @@ import { CollaborationService } from '../services/collaboration.service';
       gap: 16px;
       background-color: #3c3f41;
     }
-  `]
+  `
+    ]
 })
 export class VideoComponent implements OnInit {
   isCallActive = false;

@@ -21,10 +21,9 @@ import { CollaborationService } from '../services/collaboration.service';
 import { FileNode } from '../project-explorer/project-explorer.component';
 
 @Component({
-  selector: 'app-code-editor',
-  standalone: true,
-  imports: [CommonModule, FormsModule, CodemirrorModule],
-  template: `
+    selector: 'app-code-editor',
+    imports: [CommonModule, FormsModule, CodemirrorModule],
+    template: `
     <div class="editor-container">
       <div class="editor-header">
         <div class="connected-users">
@@ -47,7 +46,7 @@ import { FileNode } from '../project-explorer/project-explorer.component';
       <button (click)="closeFindBox()">Close</button>
     </div>
   `,
-  styles: [`
+    styles: [`
     .editor-container {
       height: 100%;
       min-height: 0;
@@ -121,6 +120,7 @@ import { FileNode } from '../project-explorer/project-explorer.component';
 })
 export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
   @Input() file: FileNode | null = null;
+  files: FileNode[] = []; // Add this line to declare the 'files' property
   @Output() codeChange = new EventEmitter<string>();
   code = '';
   connectedUsers: string[] = [];
@@ -155,6 +155,12 @@ export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
   ) {}
 
   ngOnInit() {
+    const savedFiles = localStorage.getItem('fileStructure');
+
+    if (savedFiles) {
+    this.files = JSON.parse(savedFiles);
+
+}
     this.route.paramMap.subscribe(params => {
       const paramSessionId = params.get('sessionId');
       const serviceSessionId = this.collaborationService.getCurrentSessionId();
@@ -168,6 +174,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
         console.error('No session ID available');
       }
     });
+    // Load initial code if a file is already selected
+    this.loadCodeForFile();
   }
 
   verifyCollaborator(): void {
@@ -212,7 +220,33 @@ export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
   onCodeChange(newCode: string) {
     this.code = newCode;
     if (this.file) {
-      this.file.content = newCode; // <-- Save code to the file object
+        this.file.content = newCode; // Save code to the file object
+        localStorage.setItem(this.file.path, newCode); // Save code to local storage
+        // Also update the fileStructure in localStorage to persist content changes across refreshes
+        const fileStructureString = localStorage.getItem('fileStructure');
+        if (fileStructureString) {
+            try {
+                const fileStructure = JSON.parse(fileStructureString) as FileNode[];
+                const updateFileContentRecursive = (nodes: FileNode[], path: string, content: string) => {
+                    for (const node of nodes) {
+                        if (node.path === path) {
+                            node.content = content;
+                            return true;
+                        }
+                        if (node.children && node.children.length > 0) {
+                            if (updateFileContentRecursive(node.children, path, content)) {
+                                return true;
+                            }
+                        }
+                    }
+                    return false;
+                };
+                updateFileContentRecursive(fileStructure, this.file.path, newCode);
+                localStorage.setItem('fileStructure', JSON.stringify(fileStructure));
+            } catch (e) {
+                console.error('Failed to update fileStructure in localStorage:', e);
+            }
+        }
     }
     if (this.sessionId && this.username && this.file && this.websocketService.isConnected()) {
       this.websocketService.sendCodeChange(this.code, this.username, this.file.path);
@@ -227,14 +261,28 @@ export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['file'] && this.file !== null) {
-      this.code = this.file.content || '';
+      this.loadCodeForFile();
       if (this.sessionId && this.username) {
         setTimeout(() => {
           if (this.websocketService.isConnected() && this.file) {
             this.websocketService.sendCodeChange(this.code, this.username, this.file.path);
           }
-        }, 1000);
+        }, 1000); // Delay to ensure WebSocket is ready
       }
+    }
+  }
+
+  private loadCodeForFile() {
+    if (this.file) {
+      // Prefer content from the file object if available (e.g., passed from app.component after loading from localStorage)
+      // Otherwise, try to load from localStorage directly using the file path as a key
+      this.code = this.file.content || localStorage.getItem(this.file.path) || '';
+      // If content was loaded from localStorage and file.content was empty, update file.content
+      if (!this.file.content && this.code) {
+        this.file.content = this.code;
+      }
+    } else {
+      this.code = ''; // No file selected
     }
   }
 

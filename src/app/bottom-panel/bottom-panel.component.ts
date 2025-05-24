@@ -13,11 +13,10 @@ interface PanelState {
 export type PanelType = 'terminal' | 'output' | 'problems' | 'services' | 'versionControl';
 
 @Component({
-  selector: 'app-bottom-panel',
-  standalone: true,
-  imports: [CommonModule, OutputPanelComponent, FormsModule],
-  templateUrl: './bottom-panel.component.html',
-  styleUrls: ['./bottom-panel.component.css']
+    selector: 'app-bottom-panel',
+    imports: [CommonModule, OutputPanelComponent, FormsModule],
+    templateUrl: './bottom-panel.component.html',
+    styleUrls: ['./bottom-panel.component.css']
 })
 export class BottomPanelComponent {
   @Input() outputText: string = '';

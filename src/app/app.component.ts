@@ -16,19 +16,18 @@ import { UserFileService } from './services/user-file.service';
 import { ThemeService } from './services/theme.service';
 
 @Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [
-    CommonModule,
-    NavbarComponent,
-    ToolbarComponent,
-    BottomPanelComponent,
-    RouterModule,
-    ProjectExplorerComponent,
-    CodeEditorComponent
-  ],
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+    selector: 'app-root',
+    imports: [
+        CommonModule,
+        NavbarComponent,
+        ToolbarComponent,
+        BottomPanelComponent,
+        RouterModule,
+        ProjectExplorerComponent,
+        CodeEditorComponent
+    ],
+    templateUrl: './app.component.html',
+    styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
   title = 'Codzy';
@@ -319,13 +318,54 @@ onRun() {
   ngOnInit() {
     this.themeService.initializeTheme();
 
+    // Load file structure from local storage
+    const storedFileStructure = localStorage.getItem('fileStructure');
+    if (storedFileStructure) {
+      try {
+        this.fileNodes = JSON.parse(storedFileStructure);
+      } catch (e) {
+        console.error('Error parsing fileStructure from localStorage:', e);
+        // Initialize with default if parsing fails or no stored structure
+        this.initializeDefaultFileNodes();
+      }
+    } else {
+      // Initialize with default if no stored structure
+      this.initializeDefaultFileNodes();
+    }
+
+    // Load last selected file from local storage
+    const storedSelectedFilePath = localStorage.getItem('selectedFile');
+    if (storedSelectedFilePath) {
+      try {
+        const selectedFilePath = JSON.parse(storedSelectedFilePath);
+        if (selectedFilePath) {
+          // Ensure findFileByPathRecursive is called with this.fileNodes
+          const foundFile = this.findFileByPathRecursive(this.fileNodes, selectedFilePath);
+          if (foundFile) {
+            this.selectedFile = foundFile;
+          } else if (this.fileNodes.length > 0) {
+            // Fallback to the first file if the stored selected file is not found
+            this.selectedFile = this.fileNodes.find(node => node.type === 'file') || this.fileNodes[0];
+          }
+        }
+      } catch (e) {
+        console.error('Error parsing selectedFile from localStorage:', e);
+        if (this.fileNodes.length > 0 && !this.selectedFile) {
+          this.selectedFile = this.fileNodes.find(node => node.type === 'file') || this.fileNodes[0];
+        }
+      }
+    } else if (this.fileNodes.length > 0 && !this.selectedFile) {
+      // If no selected file is stored, select the first file by default (if any)
+      this.selectedFile = this.fileNodes.find(node => node.type === 'file') || this.fileNodes[0];
+    }
+
     // Subscribe to code changes from WebSocket
     this.websocketService.getCodeChanges().subscribe((changes: CodeChange[]) => {
       if (!Array.isArray(changes)) return;
       const latestChange = changes[changes.length - 1];
       if (latestChange && latestChange.filePath) {
         // Find the file node and update its content
-        const fileNode = this.fileNodes.find(f => f.path === latestChange.filePath);
+        const fileNode = this.findFileByPathRecursive(this.fileNodes, latestChange.filePath); // Use recursive search
         if (fileNode) {
           fileNode.content = latestChange.content;
           // If this file is currently selected, update the editor as well
@@ -336,6 +376,23 @@ onRun() {
       }
     });
   }
+
+  private initializeDefaultFileNodes() {
+    // Ensure 'untitled' file exists on startup if no data loaded from local storage
+    if (!this.fileNodes.some(f => f.name === 'untitled')) {
+      const untitledFile: FileNode = {
+        name: 'untitled',
+        type: 'file',
+        path: 'untitled',
+        content: '// This is the untitled file.\n// You can observe code changes here.\n',
+      };
+      this.fileNodes.push(untitledFile);
+      if (!this.selectedFile) {
+        this.selectedFile = untitledFile;
+      }
+    }
+  }
+
   saveUserFile() {
     if (!this.selectedFile || this.selectedFile.type === 'folder') {
       console.error('No file selected or selected item is a folder.');
@@ -351,5 +408,15 @@ onRun() {
         console.error('Error saving file:', error);
       }
     );
+  }
+  private findFileByPathRecursive(nodes: FileNode[], path: string): FileNode | null {
+    for (const node of nodes) {
+      if (node.path === path) return node;
+      if (node.type === 'folder' && node.children) {
+        const found = this.findFileByPathRecursive(node.children, path);
+        if (found) return found;
+      }
+    }
+    return null;
   }
 }

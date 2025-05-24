@@ -17,11 +17,10 @@ export interface FileNode {
 }
 
 @Component({
-  selector: 'app-project-explorer',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './project-explorer.component.html',
-  styleUrl: './project-explorer.component.css',
+    selector: 'app-project-explorer',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './project-explorer.component.html',
+    styleUrl: './project-explorer.component.css'
 })
 export class ProjectExplorerComponent {
   canShowAddButtons(node: FileNode): boolean {
@@ -126,6 +125,8 @@ export class ProjectExplorerComponent {
     }
     this.editingNode = null;
     this.newNodeType = null;
+    this.saveToLocalStorage();
+
 }
 
   cancelAdd(parent?: FileNode) {
@@ -136,6 +137,8 @@ export class ProjectExplorerComponent {
     }
     this.editingNode = null;
     this.newNodeType = null;
+    this.saveToLocalStorage();
+
   }
   onFileInputChange(event: Event) {
     const input = event.target as HTMLInputElement;
@@ -211,6 +214,8 @@ export class ProjectExplorerComponent {
     if (!this.selectedNode) return;
     this.removeNode(this.files, this.selectedNode);
     this.selectedNode = null;
+    this.saveToLocalStorage();
+
   }
   
   removeNode(nodes: FileNode[], target: FileNode): boolean {
@@ -226,4 +231,8 @@ export class ProjectExplorerComponent {
     }
     return false;
   }
+  saveToLocalStorage() {
+    localStorage.setItem('fileStructure', JSON.stringify(this.files));
+}
+
 }
