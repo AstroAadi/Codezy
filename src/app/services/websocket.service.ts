@@ -3,6 +3,7 @@ import { Client, Message } from '@stomp/stompjs';
 import { Subject, Observable, BehaviorSubject } from 'rxjs';
 import SockJS from 'sockjs-client';
 import { Collaborator } from './collaboration.service';
+import { environment } from '../../environments/environment'; // Import environment
 
 export interface CodeChange {
   content: string;
@@ -40,7 +41,7 @@ export class WebsocketService {
 
   constructor() {
     this.client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8081/ws'),
+      webSocketFactory: () => new SockJS(`${environment.apiUrl}/ws`), // Use environment.apiUrl
       debug: (str) => {
         console.log('[WebSocket Debug]', str);
       }

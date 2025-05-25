@@ -1,12 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { environment } from '../../environments/environment'; // Import environment
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private userSubject = new BehaviorSubject<string | null>(null);
   user$ = this.userSubject.asObservable();
-  private apiUrl = 'http://localhost:8081/api/auth';
+  // Remove the hardcoded apiUrl
+  // private apiUrl = 'http://localhost:8081/api/auth'; 
 
   constructor(private http: HttpClient) {
     const savedUser = localStorage.getItem('user');
@@ -16,7 +18,7 @@ export class AuthService {
   }
 
   register(data: { name: string; email: string; password: string; otp: string }): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/register?otp=${encodeURIComponent(data.otp)}`, data).pipe(
+    return this.http.post<any>(`${environment.apiUrl}/api/auth/register?otp=${encodeURIComponent(data.otp)}`, data).pipe( // Use environment.apiUrl
       tap(res => {
         if (res && res.token && res.user) {
           this.userSubject.next(res.user.name || res.user.email);
@@ -28,15 +30,15 @@ export class AuthService {
   }
 
   sendOtp(email: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/send-otp`, { email });
+    return this.http.post<any>(`${environment.apiUrl}/api/auth/send-otp`, { email }); // Use environment.apiUrl
   }
 
   verifyOtp(email: string, otp: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/verify-otp`, { email, otp });
+    return this.http.post<any>(`${environment.apiUrl}/api/auth/verify-otp`, { email, otp }); // Use environment.apiUrl
   }
 
   login(data: { email: string; password: string }): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/login`, data).pipe(
+    return this.http.post<any>(`${environment.apiUrl}/api/auth/login`, data).pipe( // Use environment.apiUrl
       tap(res => {
         if (res && res.token && res.user) {
           this.userSubject.next(res.user.name || res.user.email);

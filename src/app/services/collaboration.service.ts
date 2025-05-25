@@ -6,6 +6,7 @@ import { WebsocketService } from './websocket.service';
 import { AuthService } from './auth.service';
 import { Subject } from 'rxjs';
 import { FileNode } from '../project-explorer/project-explorer.component';
+import { environment } from '../../environments/environment'; // Import environment
 
 export interface Collaborator {
   email: string;
@@ -25,7 +26,8 @@ export class CollaborationService {
   private injector: Injector;  // Lazy dependency injection
   private _http: HttpClient | null = null; 
 
-  private baseUrl = 'http://localhost:8081/api/collaboration';
+  // Remove the hardcoded baseUrl
+  // private baseUrl = 'http://localhost:8081/api/collaboration';
 
   constructor(injector: Injector, private router: Router, private websocketService: WebsocketService, private authService: AuthService) {
     this.injector = injector;
@@ -46,7 +48,7 @@ export class CollaborationService {
   }
 
   verifySession(sessionId: string, email?: string): Observable<{ isValid: boolean, canEdit: boolean, email: string }> {
-    let url = `${this.baseUrl}/verifySession?sessionId=${sessionId}`;
+    let url = `${environment.apiUrl}/api/collaboration/verifySession?sessionId=${sessionId}`; // Use environment.apiUrl
     if (email) {
       url += `&email=${email}`;
     }
@@ -101,7 +103,7 @@ export class CollaborationService {
       sessionId: this.currentSessionId 
     };
 
-    this.http.post(`${this.baseUrl}/addCollaborator`, payload, { responseType: 'text' })
+    this.http.post(`${environment.apiUrl}/api/collaboration/addCollaborator`, payload, { responseType: 'text' }) // Use environment.apiUrl
       .subscribe({
         next: (response: string) => {
           console.log('Backend response:', response);
@@ -138,7 +140,7 @@ export class CollaborationService {
     const name = this.authService.currentUser || '';
     const payload = { sessionId, email, name };
     this.currentSessionId = sessionId;
-    return this.http.post<{ joined: boolean }>(`${this.baseUrl}/joinSession`, payload);
+    return this.http.post<{ joined: boolean }>(`${environment.apiUrl}/api/collaboration/joinSession`, payload); // Use environment.apiUrl
   }
 
   fileAdded$ = new Subject<FileNode>();

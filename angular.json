@@ -5,7 +5,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "demo": {
+    "Codezy": { 
       "architect": {
         "build": {
           "builder": "@angular/build:application",
@@ -22,14 +22,20 @@
               "namedChunks": false,
               "optimization": true,
               "outputHashing": "all",
-              "sourceMap": false
+              "sourceMap": false,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ]
             }
           },
           "options": {
             "assets": [],
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "outputPath": "dist/demo",
+            "outputPath": "dist/Codezy", 
             "allowedCommonJsDependencies": [
               "sockjs-client"
             ],
@@ -48,13 +54,13 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "development": {
-              "buildTarget": "demo:build:development"
+              "buildTarget": "Codezy:build:development" 
             },
             "production": {
-              "buildTarget": "demo:build:production"
+              "buildTarget": "Codezy:build:production"
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "production"
         }
       },
       "prefix": "app",

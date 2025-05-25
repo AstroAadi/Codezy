@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "dist/demo",
+    "public": "dist/Codezy/browser", 
     "ignore": [
       "firebase.json",
       "**/.*",

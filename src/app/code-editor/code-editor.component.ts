@@ -297,7 +297,12 @@ export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
   copy() {
     const cm = this.codemirror?.codeMirror;
     if (cm) {
-      document.execCommand('copy');
+      const selectedText = cm.getSelection();
+      if (selectedText) {
+        navigator.clipboard.writeText(selectedText).catch(err => {
+          console.error('Failed to copy text:', err);
+        });
+      }
     }
   }
   paste() {
