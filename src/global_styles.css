@@ -1,16 +1,14 @@
-/* Global styles */
 body {
-  background-color: #2b2b2b;
+  background-color: #2b2b2b; /* This is a dark background */
   color: #fff;
   margin: 0;
   padding: 0;
 }
 body.dark-theme,
 body.dark-theme * {
-  background: #ffffff !important;
+  background: #ffffff !important; /* This is a light background for .dark-theme */
   color: #292020 !important;
 }
 body.dark-theme .navbar, body.dark-theme .sidebar, body.dark-theme .panel {
   background: #ffffff !important;
 }
-

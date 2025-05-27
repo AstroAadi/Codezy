@@ -11,13 +11,7 @@ export class ThemeService {
   constructor() {}
 
   initializeTheme(): void {
-    const savedTheme = localStorage.getItem('theme');
-    // Default to dark unless explicitly set to light
-    if (savedTheme === 'light') {
-      this.setDarkMode(false);
-    } else {
-      this.setDarkMode(true);
-    }
+    this.setDarkMode(false)
   }
 
   toggleTheme(): void {
@@ -34,6 +28,6 @@ export class ThemeService {
       document.body.classList.remove('dark-theme');
       document.body.classList.add('light-theme');
     }
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
   }
 }

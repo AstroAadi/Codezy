@@ -1,7 +1,7 @@
 <nav class="navbar navbar-expand-lg">
   <div class="container-fluid px-2">
     <a class="navbar-brand py-0" href="#">
-      <i class="bi bi-code-square"></i> Codezy
+      <img src="assets/Codezy-Logo.png" alt="Codezy Logo" style="height: 20px; margin-right: 8px;"> Codezy
     </a>
     <div class="navbar-collapse">
       <ul class="navbar-nav">
@@ -23,8 +23,8 @@
       <span class="nav-link">{{ user }}</span>
       <div class="navbar-actions">
         <button class="btn theme-toggle" (click)="toggleTheme()">
-          <span *ngIf="isDarkMode">☀️</span>
-          <span *ngIf="!isDarkMode">🌙</span>
+          <span *ngIf="isDarkMode">🌙</span>
+          <span *ngIf="!isDarkMode">☀️</span>
         </button>
       </div>
       <a class="nav-link" href="#" (click)="logout()">Logout</a>
