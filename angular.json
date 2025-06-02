@@ -38,9 +38,25 @@
             ],
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "outputPath": "dist/Codezy", 
+            "outputPath": "dist/Codezy",
             "allowedCommonJsDependencies": [
-              "sockjs-client"
+              "xterm",
+              "sockjs-client",
+              "codemirror",
+              "codemirror/mode/javascript/javascript",
+              "codemirror/mode/xml/xml",
+              "codemirror/mode/css/css",
+              "codemirror/mode/clike/clike",
+              "codemirror/mode/python/python",
+              "codemirror/addon/edit/closebrackets",
+              "codemirror/addon/edit/matchbrackets",
+              "codemirror/addon/fold/foldcode",
+              "codemirror/addon/fold/foldgutter",
+              "codemirror/addon/lint/lint",
+              "codemirror/addon/hint/show-hint",
+              "codemirror/addon/search/searchcursor",
+              "codemirror/addon/search/search",
+              "codemirror/addon/search/match-highlighter"
             ],
             "polyfills": [
               "zone.js",
@@ -57,7 +73,7 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "development": {
-              "buildTarget": "Codezy:build:development" 
+              "buildTarget": "Codezy:build:development"
             },
             "production": {
               "buildTarget": "Codezy:build:production"

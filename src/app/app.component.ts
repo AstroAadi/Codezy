@@ -166,16 +166,7 @@ onSessionModeSelected(mode: 'create' | 'join') {
       }
     });
 
-    //  // Subscribe to toolbar actions for navbar and toolbar
-    //  this.toolbarActions.newFile.subscribe(() => {
-    //   if (this.projectExplorer) this.projectExplorer.startAdd('file');
-    // });
-    // this.toolbarActions.addFolder.subscribe(() => {
-    //   if (this.projectExplorer) this.projectExplorer.startAdd('folder');
-    // });
-    // this.toolbarActions.openFile.subscribe(() => {
-    //   // Optionally trigger file input dialog or handle file open logic
-    // });
+    
     this.toolbarActions.saveFile.subscribe(() => {
       this.saveUserFile();
     });
@@ -256,8 +247,8 @@ onRun() {
     this.activeBottomPanel = 'output';
     setTimeout(() => {
       if (this.bottomPanelComponent && this.bottomPanelComponent.outputPanelComponent) {
-        this.bottomPanelComponent.outputPanelComponent.code = this.selectedFile?.content || '';
-        this.bottomPanelComponent.outputPanelComponent.language = this.selectedLanguage || 'python';
+        this.bottomPanelComponent.outputPanelComponent.fileContent = this.selectedFile?.content || ''; // Use fileContent
+        this.bottomPanelComponent.outputPanelComponent.fileName = this.selectedFile?.name || ''; // Use fileName
         this.bottomPanelComponent.outputPanelComponent.runCode();
       }
     });

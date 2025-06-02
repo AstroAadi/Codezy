@@ -1,0 +1,179 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  background-color: #282c34; /* Dark background for a modern theme */
+  color: #ffffff; /* White text color */
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+h2 {
+  color: #61dafb; /* Accent color for headings */
+  margin-bottom: 20px;
+}
+
+video {
+  width: 400px;
+  margin: 10px;
+  border: 2px solid #61dafb; /* Accent color border */
+  border-radius: 10px;
+  background-color: #000;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
+}
+
+#remoteVideosContainer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 20px;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.remote-video-container {
+  position: relative;
+  margin: 10px;
+  background-color: #3a3f47; /* Slightly lighter dark background for containers */
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  overflow: hidden; /* Ensures border-radius applies to video */
+}
+
+#remoteVideosContainer video {
+  width: 300px; /* Smaller size for multiple remote videos */
+  height: 225px;
+  margin: 0;
+  object-fit: cover;
+  border-radius: 10px; /* Apply border-radius to video inside container */
+}
+
+/* Responsive grid for different numbers of participants */
+@media (min-width: 768px) {
+  #remoteVideosContainer.participants-1 .remote-video-container {
+    width: 100%;
+    max-width: 600px;
+  }
+  
+  #remoteVideosContainer.participants-2 .remote-video-container,
+  #remoteVideosContainer.participants-3 .remote-video-container,
+  #remoteVideosContainer.participants-4 .remote-video-container {
+    width: calc(50% - 20px);
+  }
+  
+  #remoteVideosContainer.participants-5 .remote-video-container,
+  #remoteVideosContainer.participants-6 .remote-video-container {
+    width: calc(33.333% - 20px);
+  }
+  
+  #remoteVideosContainer.participants-7 .remote-video-container,
+  #remoteVideosContainer.participants-8 .remote-video-container,
+  #remoteVideosContainer.participants-9 .remote-video-container {
+    width: calc(25% - 20px);
+  }
+}
+
+.user-label {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background-color: rgba(0, 0, 0, 0.6); /* Slightly darker overlay for text */
+  color: white;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.controls {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px; /* Space between buttons */
+}
+
+button {
+  padding: 12px 25px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #61dafb; /* Accent color for buttons */
+  color: #282c34; /* Dark text on accent buttons */
+  border: none;
+  border-radius: 5px;
+  transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth transitions */
+  font-weight: bold;
+}
+
+button:hover {
+  background-color: #21a1f1; /* Darker accent on hover */
+  transform: translateY(-2px); /* Slight lift effect */
+}
+
+button:active {
+  transform: translateY(0); /* Press effect */
+}
+
+button:disabled {
+  background-color: #444; /* Darker disabled color */
+  color: #888;
+  cursor: not-allowed;
+  transform: none;
+}
+
+#localVideo {
+  border: 3px solid #4CAF50; /* Green border for local video */
+}
+
+/* Add a loading indicator for videos that are connecting */
+.connecting::after {
+  content: "Connecting...";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+}
+/* ... existing styles ... */
+
+.status-indicator {
+  padding: 8px 15px;
+  border-radius: 20px;
+  margin-bottom: 15px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-indicator.connected {
+  background-color: #4CAF50; /* Green */
+  color: white;
+}
+
+.status-indicator.connecting {
+  background-color: #FFC107; /* Amber */
+  color: #333;
+}
+
+.status-indicator.disconnected {
+  background-color: #F44336; /* Red */
+  color: white;
+}
+
+.local-video-container {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.participant-count {
+  margin-top: 15px;
+  font-weight: bold;
+  font-size: 1.1em;
+  color: #61dafb; /* Accent color for participant count */
+}
+
+.button-text {
+  display: inline-block;
+}

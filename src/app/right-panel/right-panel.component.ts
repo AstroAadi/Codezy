@@ -1,11 +1,11 @@
 import { Component, HostBinding } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ChatComponent } from '../chat/chat.component';
-import { VideoComponent } from '../video/video.component';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { Input } from '@angular/core';
 import { CollaboratorComponent } from '../collaborator/collaborator.component';
+import { VideoCallComponent } from '../video/video-call.component';
 
 interface PanelState {
   isOpen: boolean;
@@ -16,7 +16,7 @@ type PanelType = 'collaborator' | 'chat' | 'video';
 
 @Component({
     selector: 'app-right-panel',
-    imports: [CommonModule, ChatComponent, VideoComponent, CollaboratorComponent, RouterModule],
+    imports: [CommonModule, ChatComponent, CollaboratorComponent, RouterModule, VideoCallComponent],
     templateUrl: './right-panel.component.html',
     styleUrls: ['./right-panel.component.css']
 })

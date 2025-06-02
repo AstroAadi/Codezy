@@ -7,18 +7,23 @@ import { Subscription } from 'rxjs';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/mode/xml/xml';
 import 'codemirror/mode/css/css';
+import 'codemirror/mode/clike/clike';  // For Java and C
+import 'codemirror/mode/python/python';
 import 'codemirror/addon/edit/closebrackets';
 import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/fold/foldcode';
 import 'codemirror/addon/fold/foldgutter';
 import 'codemirror/addon/lint/lint';
 import 'codemirror/addon/hint/show-hint';
+import 'codemirror/addon/hint/javascript-hint';
+import 'codemirror/addon/hint/anyword-hint';
 import 'codemirror/addon/search/searchcursor';
 import 'codemirror/addon/search/search';
 import 'codemirror/addon/search/match-highlighter';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CollaborationService } from '../services/collaboration.service';
 import { FileNode } from '../project-explorer/project-explorer.component';
+import CodeMirror from 'codemirror';
 
 @Component({
     selector: 'app-code-editor',
@@ -139,7 +144,30 @@ export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
     autoCloseBrackets: true,
     matchBrackets: true,
     lint: true,
-    extraKeys: { 'Ctrl-Space': 'autocomplete' },
+    extraKeys: {
+      'Ctrl-Space': 'autocomplete',
+      'Alt-Space': 'autocomplete',
+      'Ctrl-Enter': (cm: CodeMirror.Editor) => {
+        CodeMirror.showHint(cm, CodeMirror.hint.anyword);
+      },
+      '.': (cm: CodeMirror.Editor) => {
+        setTimeout(() => {
+          CodeMirror.showHint(cm, CodeMirror.hint.anyword);
+        }, 300);
+      },
+      'Tab': (cm: CodeMirror.Editor) => {
+        setTimeout(() => {
+          CodeMirror.showHint(cm, CodeMirror.hint.anyword);
+        }, 300);
+      }
+    },
+    hintOptions: {
+      completeSingle: false,
+      alignWithWord: true,
+      closeOnUnfocus: true,
+      closeCharacters: /[\s()\[\]{};:>,]/,
+      async: true
+    },
     indentUnit: 2,
     tabSize: 2,
     indentWithTabs: false,
@@ -176,6 +204,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
     });
     // Load initial code if a file is already selected
     this.loadCodeForFile();
+    setTimeout(() => this.setupAutocomplete(), 1000);
   }
 
   verifyCollaborator(): void {
@@ -272,10 +301,28 @@ export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
+  private getEditorMode(filename: string): string {
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    switch (ext) {
+      case 'py': return 'python';
+      case 'java': return 'text/x-java';
+      case 'c': return 'text/x-csrc';
+      case 'cpp': case 'h': case 'hpp': return 'text/x-c++src';
+      case 'js': return 'javascript';
+      case 'html': return 'xml';
+      case 'css': return 'css';
+      default: return 'javascript';
+    }
+  }
+
   private loadCodeForFile() {
     if (this.file) {
-      // Prefer content from the file object if available (e.g., passed from app.component after loading from localStorage)
-      // Otherwise, try to load from localStorage directly using the file path as a key
+      // Update the mode based on file extension
+      this.codeMirrorOptions = {
+        ...this.codeMirrorOptions,
+        mode: this.getEditorMode(this.file.path)
+      };
+      // Prefer content from the file object if available
       this.code = this.file.content || localStorage.getItem(this.file.path) || '';
       // If content was loaded from localStorage and file.content was empty, update file.content
       if (!this.file.content && this.code) {
@@ -362,6 +409,18 @@ export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
         selections.forEach(sel => {
           cm.replaceRange('', sel.anchor, sel.head);
         });
+      });
+    }
+  }
+  // Add this method to the component class
+  private setupAutocomplete() {
+    if (this.codemirror?.codeMirror) {
+      this.codemirror.codeMirror.on('change', (cm, change) => {
+        if (change.origin === '+input' && change.text[0] !== '\n') {
+          setTimeout(() => {
+            CodeMirror.showHint(cm, CodeMirror.hint.anyword);
+          }, 500);
+        }
       });
     }
   }

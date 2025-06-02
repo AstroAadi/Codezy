@@ -6,7 +6,7 @@
   <div class="panel-content" *ngIf="activePanel" [style.width.px]="panels[activePanel].width">
     <app-collaborator *ngIf="activePanel === 'collaborator'" [mode]="collaboratorMode"></app-collaborator>
     <app-chat *ngIf="activePanel === 'chat'"></app-chat>
-    <app-video *ngIf="activePanel === 'video'"></app-video>
+    <app-video-call *ngIf="activePanel === 'video'"></app-video-call>
   </div>
 </div>
 

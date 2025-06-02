@@ -26,9 +26,6 @@ export class CollaborationService {
   private injector: Injector;  // Lazy dependency injection
   private _http: HttpClient | null = null; 
 
-  // Remove the hardcoded baseUrl
-  // private baseUrl = 'http://localhost:8081/api/collaboration';
-
   constructor(injector: Injector, private router: Router, private websocketService: WebsocketService, private authService: AuthService) {
     this.injector = injector;
     // Subscribe to WebSocket collaborator updates

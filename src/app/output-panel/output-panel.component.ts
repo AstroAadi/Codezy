@@ -1,16 +1,16 @@
 import { Component, Input, ViewChild, ElementRef } from '@angular/core';
 import { Terminal } from 'xterm';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 
 @Component({
-    selector: 'app-output-panel',
-    imports: [CommonModule, FormsModule],
-    templateUrl: './output-panel.component.html'
+  selector: 'app-output-panel',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './output-panel.component.html'
 })
 export class OutputPanelComponent {
-  @Input() code: string = '';
-  @Input() language: string = 'python';
+  @Input() fileContent: string = '';
+  @Input() fileName: string = '';
   @ViewChild('terminalContainer', { static: true }) terminalContainer!: ElementRef;
   terminal!: Terminal;
   socket!: WebSocket;
@@ -23,21 +23,29 @@ export class OutputPanelComponent {
     this.terminal.open(this.terminalContainer.nativeElement);
     this.terminal.write('✅ Terminal initialized!\r\n');
 
-    this.socket = new WebSocket('wss://spring-app-380351855140.asia-south1.run.app/terminal');
+    this.socket = new WebSocket('ws://localhost:8081/terminal');
     this.socket.onopen = () => {
-        this.terminal.write('🔗 WebSocket connected!\r\n');
+      this.terminal.write('🔗 WebSocket connected!\r\n');
     };
+
     this.socket.onmessage = (msg) => {
       this.output += msg.data;
       this.terminal.write(msg.data);
+      
+      if (msg.data.includes('[Input required]')) {
+        this.needsInput = true;
+      } else if (msg.data.includes('[Process completed]')) {
+        this.needsInput = false;
+      }
     };
+
     this.terminal.onData((data) => {
       if (this.needsInput) {
-        if (data === '\r') {
+        if (data === '\r') { // Enter key
           this.socket.send(JSON.stringify({ type: 'input', value: this.inputBuffer }));
           this.terminal.write('\r\n');
           this.inputBuffer = '';
-        } else if (data === '\u007f') {
+        } else if (data === '\u007f') { // Backspace
           if (this.inputBuffer.length > 0) {
             this.inputBuffer = this.inputBuffer.slice(0, -1);
             this.terminal.write('\b \b');
@@ -46,8 +54,6 @@ export class OutputPanelComponent {
           this.inputBuffer += data;
           this.terminal.write(data);
         }
-      } else {
-        this.socket.send(data);
       }
     });
   }
@@ -61,14 +67,41 @@ export class OutputPanelComponent {
   }
 
   runCode() {
-    this.needsInput = this.detectNeedsInput(this.code, this.language);
-    if (this.socket && this.terminal) {
-      const payload = JSON.stringify({ code: this.code, language: this.language });
+    const language = this.getLanguageFromFileName(this.fileName);
+    this.needsInput = this.detectNeedsInput(this.fileContent, language);
+
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      const payload = JSON.stringify({
+        fileName: this.fileName,
+        code: this.fileContent,
+        type: 'code'
+      });
       this.socket.send(payload);
-      this.terminal.write('▶️ Code sent to backend!\r\n');
-      if (this.needsInput) {
-        this.terminal.write('\r\n[Input required] ');
-      }
+      this.terminal.write('▶ Code sent to backend!\r\n');
+    } else if (this.socket) {
+      this.socket.onopen = () => {
+        const payload = JSON.stringify({
+          fileName: this.fileName,
+          code: this.fileContent,
+          type: 'code'
+        });
+        this.socket.send(payload);
+        this.terminal.write('▶ Code sent to backend!\r\n');
+      };
+      this.terminal.write('⏳ Waiting for WebSocket connection to open...\r\n');
+    } else {
+      this.terminal.write('❌ WebSocket not initialized.\r\n');
+    }
+  }
+
+  private getLanguageFromFileName(fileName: string): string {
+    const extension = fileName.split('.').pop();
+    switch (extension) {
+      case 'py': return 'python';
+      case 'java': return 'java';
+      case 'c': return 'c';
+      case 'js': return 'node';
+      default: return 'plaintext';
     }
   }
 }

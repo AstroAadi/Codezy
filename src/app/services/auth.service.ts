@@ -7,8 +7,6 @@ import { environment } from '../../environments/environment'; // Import environm
 export class AuthService {
   private userSubject = new BehaviorSubject<string | null>(null);
   user$ = this.userSubject.asObservable();
-  // Remove the hardcoded apiUrl
-  // private apiUrl = 'http://localhost:8081/api/auth'; 
 
   constructor(private http: HttpClient) {
     const savedUser = localStorage.getItem('user');

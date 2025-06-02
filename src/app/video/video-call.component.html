@@ -1,0 +1,37 @@
+<div class="container">
+  <h2>Video Chat</h2>
+
+  <!-- Connection status indicator -->
+  <div class="status-indicator" [ngClass]="{'connected': isConnected, 'connecting': isConnecting, 'disconnected': !isConnected && !isConnecting}">
+    <span *ngIf="isConnected">Connected</span>
+    <span *ngIf="isConnecting">Connecting...</span>
+    <span *ngIf="!isConnected && !isConnecting">Disconnected</span>
+  </div>
+
+  <!-- Local video with user label -->
+  <div class="local-video-container">
+    <video id="localVideo" autoplay muted playsinline></video>
+    <div class="user-label">You</div>
+  </div>
+
+  <!-- Remote videos container with dynamic class for responsive layout -->
+  <div id="remoteVideosContainer" [ngClass]="'participants-' + peerConnections.size"></div>
+
+  <!-- Controls with tooltips -->
+  <div class="controls">
+    <button (click)="startCall()" [disabled]="localStream" title="Start your camera and microphone">
+      <span class="button-text">Start Camera</span>
+    </button>
+    <button (click)="joinRoom()" [disabled]="!localStream || isConnected" title="Join the video chat room">
+      <span class="button-text">Join Chat</span>
+    </button>
+    <button (click)="endCall()" [disabled]="!isConnected" title="Leave the video chat">
+      <span class="button-text">End Call</span>
+    </button>
+  </div>
+
+  <!-- Participant count -->
+  <div class="participant-count" *ngIf="isConnected">
+    Participants: {{ peerConnections.size + 1 }} <!-- +1 for local user -->
+  </div>
+</div>

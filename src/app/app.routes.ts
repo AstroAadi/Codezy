@@ -1,12 +1,8 @@
 import { Routes } from '@angular/router';
 import { CodeEditorComponent } from './code-editor/code-editor.component';
-import { ChatComponent } from './chat/chat.component';
 import { LoginComponent } from './login/login.component';
 import { RegisterComponent } from './register/register.component';
 import { AuthGuard } from './auth.guard';
-import { VideoComponent } from './video/video.component';
-import { CollaboratorComponent } from './collaborator/collaborator.component';
-
 export const routes: Routes = [
   // ... other routes ...
   { path: '', component: CodeEditorComponent },
