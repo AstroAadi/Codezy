@@ -23,7 +23,7 @@ export class OutputPanelComponent {
     this.terminal.open(this.terminalContainer.nativeElement);
     this.terminal.write('✅ Terminal initialized!\r\n');
 
-    this.socket = new WebSocket('ws://localhost:8081/terminal');
+    this.socket = new WebSocket('wss://codezy-backend.onrender.com/terminal');
     this.socket.onopen = () => {
       this.terminal.write('🔗 WebSocket connected!\r\n');
     };
