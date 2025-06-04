@@ -1,37 +1,36 @@
 <div class="container">
   <h2>Video Chat</h2>
 
-  <!-- Connection status indicator -->
-  <div class="status-indicator" [ngClass]="{'connected': isConnected, 'connecting': isConnecting, 'disconnected': !isConnected && !isConnecting}">
-    <span *ngIf="isConnected">Connected</span>
-    <span *ngIf="isConnecting">Connecting...</span>
-    <span *ngIf="!isConnected && !isConnecting">Disconnected</span>
-  </div>
-
-  <!-- Local video with user label -->
   <div class="local-video-container">
     <video id="localVideo" autoplay muted playsinline></video>
     <div class="user-label">You</div>
+    <div class="video-controls">
+      <button (click)="toggleVideo()" [class.active]="!isVideoMuted" title="Toggle Video">
+        <i class="fas" [ngClass]="{'fa-video': !isVideoMuted, 'fa-video-slash': isVideoMuted}"></i>
+      </button>
+      <button (click)="toggleAudio()" [class.active]="!isAudioMuted" title="Toggle Microphone">
+        <i class="fas" [ngClass]="{'fa-microphone': !isAudioMuted, 'fa-microphone-slash': isAudioMuted}"></i>
+      </button>
+    </div>
   </div>
 
-  <!-- Remote videos container with dynamic class for responsive layout -->
   <div id="remoteVideosContainer" [ngClass]="'participants-' + peerConnections.size"></div>
 
-  <!-- Controls with tooltips -->
   <div class="controls">
     <button (click)="startCall()" [disabled]="localStream" title="Start your camera and microphone">
-      <span class="button-text">Start Camera</span>
+      <i class="fas fa-video"></i> Start Camera
+    </button>
+    <button (click)="endCall()" [disabled]="!localStream" title="End the call">
+      <i class="fas fa-phone-slash"></i> End Call
     </button>
     <button (click)="joinRoom()" [disabled]="!localStream || isConnected" title="Join the video chat room">
-      <span class="button-text">Join Chat</span>
-    </button>
-    <button (click)="endCall()" [disabled]="!isConnected" title="Leave the video chat">
-      <span class="button-text">End Call</span>
+      <i class="fas fa-user-plus"></i> Join Chat
     </button>
   </div>
+</div>
 
   <!-- Participant count -->
   <div class="participant-count" *ngIf="isConnected">
     Participants: {{ peerConnections.size + 1 }} <!-- +1 for local user -->
   </div>
-</div>
+<!-- </div> -->

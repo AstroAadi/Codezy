@@ -1,6 +1,7 @@
 import { Component, Input, ViewChild, ElementRef } from '@angular/core';
 import { Terminal } from 'xterm';
 import { CommonModule } from '@angular/common';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-output-panel',
@@ -23,7 +24,7 @@ export class OutputPanelComponent {
     this.terminal.open(this.terminalContainer.nativeElement);
     this.terminal.write('✅ Terminal initialized!\r\n');
 
-    this.socket = new WebSocket('wss://codezy-backend.onrender.com/terminal');
+    this.socket = new WebSocket(environment.wsTerminalUrl);
     this.socket.onopen = () => {
       this.terminal.write('🔗 WebSocket connected!\r\n');
     };

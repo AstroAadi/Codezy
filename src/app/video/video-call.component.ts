@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterOutlet } from '@angular/router'; // Import ActivatedRoute
 import { AuthService } from '../services/auth.service';
 import { CollaborationService } from '../services/collaboration.service'; // Import CollaborationService
+import { environment } from '../../environments/environment';
 
 interface SignalMessage {
   type: 'join' | 'offer' | 'answer' | 'candidate' | 'leave';
@@ -123,7 +124,7 @@ export class VideoCallComponent implements OnInit, OnDestroy {
     this.isConnected = false;
 
     // Single WebSocket initialization
-    this.ws = new WebSocket(`wss://codezy-backend.onrender.com/signal/${this.currentSessionId}`); // Use currentSessionId
+    this.ws = new WebSocket(`${environment.wsSignalUrl}/${this.currentSessionId}`); // Use currentSessionId
 
     this.ws.onopen = () => {
       console.log('WebSocket connected. Joining room:', this.currentSessionId); // Use currentSessionId
@@ -509,32 +510,53 @@ export class VideoCallComponent implements OnInit, OnDestroy {
   endCall(): void {
     console.log('Ending call and cleaning up resources.');
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      // Send a leave message to the signaling server
-      this.ws.send(JSON.stringify({
-        type: 'leave',
-        roomId: this.currentSessionId,
-        leavingUserId: this.userId,
-        leavingUserName: this.userName
-      }));
+        this.ws.send(JSON.stringify({
+            type: 'leave',
+            roomId: this.currentSessionId,
+            leavingUserId: this.userId,
+            leavingUserName: this.userName
+        }));
     }
-
-    // Stop all local media tracks
+    
+    // Stop all media tracks
     if (this.localStream) {
-      this.localStream.getTracks().forEach(track => {
-        track.stop(); // Stop each track (video and audio)
-      });
-      this.localStream = null; // Clear the local stream reference
-      const localVideo: HTMLVideoElement = document.getElementById('localVideo') as HTMLVideoElement;
-      if (localVideo) {
-        localVideo.srcObject = null; // Detach stream from video element
-      }
+        this.localStream.getTracks().forEach(track => track.stop());
+        this.localStream = null;
+        
+        // Clear local video
+        const localVideo = document.getElementById('localVideo') as HTMLVideoElement;
+        if (localVideo) {
+            localVideo.srcObject = null;
+        }
     }
-
-    // Cleanup all peer connections and close WebSocket
+    
     this.cleanup(true);
-
-    this.isConnecting = false;
     this.isConnected = false;
     this.participantNames.clear();
   }
+
+  // Add these properties to the component class
+public isVideoMuted = false;
+public isAudioMuted = false;
+
+// Add these methods to toggle video/audio
+toggleVideo(): void {
+    if (this.localStream) {
+        const videoTracks = this.localStream.getVideoTracks();
+        videoTracks.forEach(track => {
+            track.enabled = !track.enabled;
+            this.isVideoMuted = !track.enabled;
+        });
+    }
+}
+
+toggleAudio(): void {
+    if (this.localStream) {
+        const audioTracks = this.localStream.getAudioTracks();
+        audioTracks.forEach(track => {
+            track.enabled = !track.enabled;
+            this.isAudioMuted = !track.enabled;
+        });
+    }
+}
 }
