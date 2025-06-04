@@ -123,7 +123,7 @@ export class VideoCallComponent implements OnInit, OnDestroy {
     this.isConnected = false;
 
     // Single WebSocket initialization
-    this.ws = new WebSocket(`ws://localhost:8081/signal/${this.currentSessionId}`); // Use currentSessionId
+    this.ws = new WebSocket(`wss://codezy-backend.onrender.com/signal/${this.currentSessionId}`); // Use currentSessionId
 
     this.ws.onopen = () => {
       console.log('WebSocket connected. Joining room:', this.currentSessionId); // Use currentSessionId
