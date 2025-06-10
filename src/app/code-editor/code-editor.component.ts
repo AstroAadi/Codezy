@@ -24,6 +24,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CollaborationService } from '../services/collaboration.service';
 import { FileNode } from '../project-explorer/project-explorer.component';
 import CodeMirror from 'codemirror';
+import { EditorActionsService } from '../services/editor-actions.service';
 
 @Component({
     selector: 'app-code-editor',
@@ -179,8 +180,22 @@ export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
     private route: ActivatedRoute,
     private router: Router,
     private websocketService: WebsocketService,
-    private collaborationService: CollaborationService
-  ) {}
+    private collaborationService: CollaborationService,
+    private editorActions: EditorActionsService
+  ) {
+    this.editorActions.action$.subscribe(action => {
+      switch(action) {
+        case 'undo': this.undo(); break;
+        case 'redo': this.redo(); break;
+        case 'cut': this.cut(); break;
+        case 'copy': this.copy(); break;
+        case 'paste': this.paste(); break; 
+        case 'find': this.find(); break;
+        case 'replace': this.replace(); break;
+        case 'delete': this.delete(); break;
+      }
+    });
+  }
 
   ngOnInit() {
     const savedFiles = localStorage.getItem('fileStructure');
@@ -340,6 +355,12 @@ export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
   redo() {
     this.codemirror?.codeMirror?.redo();
   
+  }
+  cut() {
+    const cm = this.codemirror?.codeMirror;
+    if (cm) {
+      cm.execCommand('cut');
+    }
   }
   copy() {
     const cm = this.codemirror?.codeMirror;
