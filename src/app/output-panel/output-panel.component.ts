@@ -71,11 +71,14 @@ export class OutputPanelComponent {
     const language = this.getLanguageFromFileName(this.fileName);
     this.needsInput = this.detectNeedsInput(this.fileContent, language);
 
+    console.log('Sending code for language:', language); // Added console log
+
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       const payload = JSON.stringify({
         fileName: this.fileName,
         code: this.fileContent,
-        type: 'code'
+        type: 'code',
+        language: language
       });
       this.socket.send(payload);
       this.terminal.write('▶ Code sent to backend!\r\n');
