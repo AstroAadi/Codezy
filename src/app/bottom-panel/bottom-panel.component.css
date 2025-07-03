@@ -60,6 +60,11 @@
   color: #fff;
 }
 
+.btn-tool.active {
+  background-color: #007acc; /* Example active background color */
+  color: #fff;
+}
+
 .tool-label {
   font-size: 12px;
 }

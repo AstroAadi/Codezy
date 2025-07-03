@@ -144,7 +144,7 @@ onSessionModeSelected(mode: 'create' | 'join') {
         name: 'untitled',
         type: 'file', // <-- This must be the literal 'file'
         path: 'untitled',
-        content: '// This is the untitled file.\n// You can observe code changes here.\n',
+        content: '// This is the untitled file.\n// This platform currently supports the execution of Java code only. Please define your class name as Main.\n//We are actively working to enable support for additional programming languages as well.',
       };
       this.fileNodes.push(untitledFile);
       if (!this.selectedFile) {

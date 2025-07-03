@@ -18,7 +18,8 @@
 <div class="bottom-toolbar">
   <div class="btn-group">
     <ng-container *ngFor="let item of bottomToolbarItems">
-      <button class="btn btn-tool" [title]="item.title" (click)="togglePanel(item.id)">
+      <button class="btn btn-tool" [title]="item.title" (click)="togglePanel(item.id)"
+        [class.active]="activePanel === item.id">
         <i class="bi bi-{{item.icon}}"></i>
         <span class="tool-label">{{item.label}}</span>
       </button>
