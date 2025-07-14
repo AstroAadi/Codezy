@@ -5,7 +5,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "Codezy": { 
+    "Codezy": {
       "architect": {
         "build": {
           "builder": "@angular/build:application",
@@ -34,7 +34,28 @@
           "options": {
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              {
+                "glob": "**/*",
+                "input": "node_modules/@fortawesome/fontawesome-free/webfonts",
+                "output": "/assets/webfonts/"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/bootstrap-icons/font/fonts",
+                "output": "/assets/fonts/"
+              }
+            ],
+            "styles": [
+              "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "node_modules/bootstrap-icons/font/bootstrap-icons.css",
+              "node_modules/@fortawesome/fontawesome-free/css/all.min.css",
+              "node_modules/codemirror/lib/codemirror.css",
+              "node_modules/codemirror/theme/darcula.css",
+              "node_modules/codemirror/addon/fold/foldgutter.css",
+              "node_modules/codemirror/addon/lint/lint.css",
+              "node_modules/codemirror/addon/hint/show-hint.css",
+              "src/global_styles.css"
             ],
             "index": "src/index.html",
             "browser": "src/main.ts",
@@ -56,16 +77,14 @@
               "codemirror/addon/hint/show-hint",
               "codemirror/addon/search/searchcursor",
               "codemirror/addon/search/search",
-              "codemirror/addon/search/match-highlighter"
+              "codemirror/addon/search/match-highlighter",
+              "sweetalert2"
             ],
             "polyfills": [
               "zone.js",
               "src/polyfills.ts"
             ],
             "scripts": [],
-            "styles": [
-              "src/global_styles.css"
-            ],
             "tsConfig": "tsconfig.app.json"
           }
         },

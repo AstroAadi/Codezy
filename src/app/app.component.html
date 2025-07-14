@@ -1,4 +1,4 @@
-<ng-container *ngIf="!isAuthRoute">
+<ng-container *ngIf="isMainLayout">
   <app-navbar></app-navbar>
   <app-toolbar
     (toggleExplorer)="toggleExplorer()"
@@ -42,4 +42,4 @@
     </div>
   </div>
 </ng-container>
-<router-outlet *ngIf="isAuthRoute"></router-outlet>
+<router-outlet *ngIf="!isMainLayout"></router-outlet>

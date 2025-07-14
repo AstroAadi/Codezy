@@ -3,9 +3,11 @@ import { CodeEditorComponent } from './code-editor/code-editor.component';
 import { LoginComponent } from './login/login.component';
 import { RegisterComponent } from './register/register.component';
 import { AuthGuard } from './auth.guard';
+import { HomeComponent } from './home/home.component'; // Import HomeComponent
+
 export const routes: Routes = [
-  // ... other routes ...
-  { path: '', component: CodeEditorComponent },
+  { path: '', component: HomeComponent }, // Set HomeComponent as the default route
+  { path: 'editor', component: CodeEditorComponent }, // Add a route for the editor
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent }, 
 

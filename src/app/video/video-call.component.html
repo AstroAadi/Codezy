@@ -1,36 +1,36 @@
 <div class="container">
-  <h2>Video Chat</h2>
-
-  <div class="local-video-container">
-    <video id="localVideo" autoplay muted playsinline></video>
-    <div class="user-label">You</div>
-    <div class="video-controls">
-      <button (click)="toggleVideo()" [class.active]="!isVideoMuted" title="Toggle Video">
-        <i class="fas" [ngClass]="{'fa-video': !isVideoMuted, 'fa-video-slash': isVideoMuted}"></i>
+    <h2>Video Chat</h2>
+  
+    <div class="local-video-container">
+      <video id="localVideo" autoplay muted playsinline></video>
+      <div class="user-label">You</div>
+      <div class="video-controls">
+        <button (click)="toggleVideo()" [class.active]="!isVideoMuted" title="Toggle Video">
+          <i class="fas" [ngClass]="{'fa-video': !isVideoMuted, 'fa-video-slash': isVideoMuted}"></i>
+        </button>
+        <button (click)="toggleAudio()" [class.active]="!isAudioMuted" title="Toggle Microphone">
+          <i class="fas" [ngClass]="{'fa-microphone': !isAudioMuted, 'fa-microphone-slash': isAudioMuted}"></i>
+        </button>
+      </div>
+    </div>
+  
+    <div id="remoteVideosContainer" [ngClass]="'participants-' + peerConnections.size"></div>
+  
+    <div class="controls">
+      <button (click)="startCall()" [disabled]="localStream" title="Start your camera and microphone">
+        <i class="fas fa-video"></i> Start Camera
       </button>
-      <button (click)="toggleAudio()" [class.active]="!isAudioMuted" title="Toggle Microphone">
-        <i class="fas" [ngClass]="{'fa-microphone': !isAudioMuted, 'fa-microphone-slash': isAudioMuted}"></i>
+      <button (click)="endCall()" [disabled]="!localStream" title="End the call">
+        <i class="fas fa-phone-slash"></i> End Call
+      </button>
+      <button (click)="joinRoom()" [disabled]="!localStream || isConnected" title="Join the video chat room">
+        <i class="fas fa-user-plus"></i> Join Chat
       </button>
     </div>
   </div>
-
-  <div id="remoteVideosContainer" [ngClass]="'participants-' + peerConnections.size"></div>
-
-  <div class="controls">
-    <button (click)="startCall()" [disabled]="localStream" title="Start your camera and microphone">
-      <i class="fas fa-video"></i> Start Camera
-    </button>
-    <button (click)="endCall()" [disabled]="!localStream" title="End the call">
-      <i class="fas fa-phone-slash"></i> End Call
-    </button>
-    <button (click)="joinRoom()" [disabled]="!localStream || isConnected" title="Join the video chat room">
-      <i class="fas fa-user-plus"></i> Join Chat
-    </button>
-  </div>
-</div>
-
-  <!-- Participant count -->
-  <div class="participant-count" *ngIf="isConnected">
-    Participants: {{ peerConnections.size + 1 }} <!-- +1 for local user -->
-  </div>
-<!-- </div> -->
+  
+    <!-- Participant count -->
+    <div class="participant-count" *ngIf="isConnected">
+      Participants: {{ peerConnections.size + 1 }} <!-- +1 for local user -->
+    </div>
+  <!-- </div> -->

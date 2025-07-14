@@ -1,6 +1,6 @@
 import { Component, ViewChild, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { SelectedFileService } from '../services/selected-file.service';
 import { EditorActionsService } from '../services/editor-actions.service';
@@ -45,7 +45,8 @@ export class NavbarComponent {
     public toolbarActions: ToolbarActionsService,
     private selectedFileService: SelectedFileService,
     private editorActions: EditorActionsService,
-    public themeService: ThemeService
+    public themeService: ThemeService,
+    public router: Router
   ) {
     this.themeService.darkMode$.subscribe(mode => this.isDarkMode = mode);
   }

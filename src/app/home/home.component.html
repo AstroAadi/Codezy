@@ -1,0 +1,90 @@
+<div class="landing-container">
+  <nav class="navbar">
+    <div class="logo">Codezy</div>
+    <ul class="nav-links">
+      <li><a (click)="scrollToSection('home')" style="cursor: pointer;">Home</a></li>
+      <li><a (click)="scrollToSection('about')" style="cursor: pointer;">About</a></li>
+      <li><a (click)="scrollToSection('features')" style="cursor: pointer;">Features</a></li>
+      <li><a (click)="scrollToSection('contact')" style="cursor: pointer;">Contact</a></li>
+      <li *ngIf="!isLoggedIn"><a (click)="goToLogin()" style="cursor: pointer;">Login</a></li>
+      <li *ngIf="isLoggedIn"><a style="cursor: pointer;">{{ userName }}</a></li>
+    </ul>
+  </nav>
+
+  <section id="home" class="hero-section">
+    <h1>Real-Time Collaborative Coding Platform</h1>
+    <p class="subheading">
+      Empower your team to code together in real-time, with full support for chat, video call, roles, and session sharing.
+    </p>
+    <div class="buttons">
+      <button class="start-btn" (click)="goToPlatform()">Start Coding</button>
+      <button class="trial-btn">Free Trial</button>
+    </div>
+  </section>
+
+  <section id="about" class="about-section">
+    <div class="section-header">
+      <h2>About Codezy</h2>
+      <div class="underline"></div>
+    </div>
+    <div class="about-content">
+      <p>
+        Codezy is an innovative collaborative coding platform that allows developers, students, and teams to write code together in real-time. With integrated support for role management, chat, and video, Codezy makes remote pair programming, interviews, and teaching easier than ever before.
+      </p>
+    </div>
+  </section>
+
+  <section id="features" class="features-section">
+    <div class="section-header">
+      <h2>Key Features</h2>
+      <div class="underline"></div>
+    </div>
+    <div class="feature-boxes">
+      <div class="feature-box">
+        <div class="feature-icon">🧠</div>
+        <h3>Real-time Collaboration</h3>
+        <p>Collaborative editor with role-based access control</p>
+      </div>
+      <div class="feature-box">
+        <div class="feature-icon">💬</div>
+        <h3>Integrated Communication</h3>
+        <p>Built-in chat and video calling capabilities</p>
+      </div>
+      <div class="feature-box">
+        <div class="feature-icon">🌐</div>
+        <h3>Cloud-based Platform</h3>
+        <p>Access from any device, anywhere in the world</p>
+      </div>
+      <div class="feature-box">
+        <div class="feature-icon">⚡</div>
+        <h3>High Performance</h3>
+        <p>Fast, secure, and scalable infrastructure</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="contact-section">
+    <div class="section-header">
+      <h2>Get in Touch</h2>
+      <div class="underline"></div>
+    </div>
+    <div class="contact-form">
+      <form #contactForm="ngForm" (ngSubmit)="onSendMessage(contactForm)">
+        <input type="text" placeholder="Your Name" name="name" ngModel required #name="ngModel">
+        <input type="email" placeholder="Your Email" name="email" ngModel required email #email="ngModel">
+        <textarea placeholder="Your Message" name="message" rows="5" ngModel required #message="ngModel"></textarea>
+        <button type="submit" class="submit-btn" style="cursor: pointer;">Send Message</button>
+        <div *ngIf="contactForm.submitted && !contactForm.form.valid" class="error-message">
+          Please fill out all fields correctly before sending.
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-content">
+      <div class="logo">Codezy</div>
+      <p>© 2025 Codezy. All rights reserved.</p>
+    </div>
+  </footer>
+</div>

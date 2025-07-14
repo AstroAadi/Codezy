@@ -18,7 +18,7 @@ const config = {
     importProvidersFrom(CodemirrorModule),
     importProvidersFrom(FormsModule),
     provideHttpClient(withInterceptors([jwtInterceptor])),
-    provideRouter(routes)
+    // provideRouter(routes) // Remove this line
   ]
 };
 

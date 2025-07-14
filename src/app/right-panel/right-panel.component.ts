@@ -27,7 +27,6 @@ export class RightPanelComponent {
     { id: 'chat', icon: 'chat-dots', title: 'Chat' },
     { id: 'video', icon: 'camera-video', title: 'Video Call' }
   ];
-  //constructor(private router: Router) {}
   panels: Record<PanelType, PanelState> = {
     collaborator: { isOpen: false, width: 300 },
     chat: { isOpen: false, width: 300 },
@@ -62,9 +61,11 @@ export class RightPanelComponent {
   }
   
   togglePanel(panelId: PanelType): void {
+    console.log(`togglePanel called for: ${panelId}`);
     if (this.activePanel === panelId) {
       this.panels[panelId].isOpen = false;
       this.activePanel = null;
+      console.log(`Panel ${panelId} closed. activePanel: ${this.activePanel}`);
     } else {
       Object.keys(this.panels).forEach(key => {
         this.panels[key as PanelType].isOpen = false;
@@ -72,6 +73,7 @@ export class RightPanelComponent {
       
       this.panels[panelId].isOpen = true;
       this.activePanel = panelId;
+      console.log(`Panel ${panelId} opened. activePanel: ${this.activePanel}`);
     }
   }
 
@@ -109,14 +111,24 @@ export class RightPanelComponent {
   }
 
   handleCollabOption(option: string) {
+    console.log(`handleCollabOption called with: ${option}`);
+    if (!this.auth.isLoggedIn()) {
+      alert('Login first to access special features!!!');
+      this.router.navigate(['/login']);
+      return;
+    }
+
     if (option === 'Create Session') {
       this.collaboratorMode = 'create';
+      console.log('collaboratorMode set to: create');
       this.togglePanel('collaborator');
     } else if (option === 'Join Session') {
       this.collaboratorMode = 'join';
+      console.log('collaboratorMode set to: join');
       this.togglePanel('collaborator');
     }
     this.activeDropdown = null;
+    console.log('activeDropdown set to null.');
   }
 
   // Close dropdown on outside click

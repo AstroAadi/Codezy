@@ -14,6 +14,7 @@ import { ToolbarActionsService } from './services/toolbar-actions.service';
 import { SelectedFileService } from './services/selected-file.service';
 import { UserFileService } from './services/user-file.service';
 import { ThemeService } from './services/theme.service';
+import { HomeComponent } from './home/home.component';
 
 @Component({
     selector: 'app-root',
@@ -24,14 +25,15 @@ import { ThemeService } from './services/theme.service';
         BottomPanelComponent,
         RouterModule,
         ProjectExplorerComponent,
-        CodeEditorComponent
+        CodeEditorComponent,
+  
     ],
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
   title = 'Codzy';
-  isAuthRoute = false;
+  isMainLayout = false;
   isExplorerOpen = true;
   explorerWidth = 220;
 
@@ -130,8 +132,8 @@ onSessionModeSelected(mode: 'create' | 'join') {
   ) {
     this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {
-        this.isAuthRoute = ['/login', '/register'].includes(this.router.url);
-        if (this.isAuthRoute) {
+        this.isMainLayout = !['/login', '/register', '/'].includes(this.router.url);
+        if (this.router.url === '/login' || this.router.url === '/register') {
           document.body.style.overflow = 'hidden';
         } else {
           document.body.style.overflow = '';
@@ -144,7 +146,7 @@ onSessionModeSelected(mode: 'create' | 'join') {
         name: 'untitled',
         type: 'file', // <-- This must be the literal 'file'
         path: 'untitled',
-        content: '// This is the untitled file.\n// This platform currently supports the execution of Java code only. Please define your class name as Main.\n//We are actively working to enable support for additional programming languages as well.',
+        content: '// This platform currently supports the execution of Java code only. \n//Define your class name as Main.\n//We are actively working to enable support for additional programming languages as well.',
       };
       this.fileNodes.push(untitledFile);
       if (!this.selectedFile) {
