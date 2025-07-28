@@ -175,15 +175,30 @@ broadcastStartCall(sessionId: string) {
     console.error('[WebsocketService] WebSocket not connected');
     return;
   }
-  this.client.publish({
-    destination: `/app/startCall/${sessionId}`,
-    body: JSON.stringify({ sessionId })
-  });
+  const signalSocket = new WebSocket(`ws://localhost:8081/signal/${sessionId}`);
+  
+  signalSocket.onopen = () => {
+    console.log('[WebsocketService] Signal WebSocket connected');
+    this.client.publish({
+      destination: `wss://codezy-backend-185224543792.asia-south2.run.app/signal/${sessionId}`,
+      body: JSON.stringify({ sessionId })
+    });
+  };
+
+  signalSocket.onmessage = (event) => {
+    const signal = JSON.parse(event.data);
+    console.log('[WebsocketService] Received signal:', signal);
+    // Handle incoming WebRTC signaling messages
+  };
+
+  signalSocket.onerror = (error) => {
+    console.error('[WebsocketService] Signal WebSocket error:', error);
+  };
 }
 
 onStartCall(): Observable<void> {
   return new Observable(observer => {
-    this.client.subscribe(`/topic/startCall/${this.currentSessionId}`, () => {
+    this.client.subscribe(`wss://codezy-backend-185224543792.asia-south2.run.app/signal/${this.currentSessionId}`, () => {
       observer.next();
     });
   });

@@ -32,7 +32,7 @@ export class HomeComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private route: ActivatedRoute,
+    // private route: ActivatedRoute,
     private viewportScroller: ViewportScroller,
     private authService: AuthService
   ) { }
