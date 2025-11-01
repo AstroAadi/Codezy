@@ -6,17 +6,18 @@ import { AuthService } from '../services/auth.service';
 import { Input } from '@angular/core';
 import { CollaboratorComponent } from '../collaborator/collaborator.component';
 import { VideoCallComponent } from '../video/video-call.component';
+import { AiPanelComponent } from '../ai-panel/ai-panel.component';
 
 interface PanelState {
   isOpen: boolean;
   width: number;
 }
 
-type PanelType = 'collaborator' | 'chat' | 'video';
+type PanelType = 'collaborator' | 'chat' | 'video' | 'ai';
 
 @Component({
     selector: 'app-right-panel',
-    imports: [CommonModule, ChatComponent, CollaboratorComponent, RouterModule, VideoCallComponent],
+    imports: [CommonModule, ChatComponent, CollaboratorComponent, RouterModule, VideoCallComponent, AiPanelComponent],
     templateUrl: './right-panel.component.html',
     styleUrls: ['./right-panel.component.css']
 })
@@ -25,12 +26,14 @@ export class RightPanelComponent {
   collaborationItems: Array<{ id: PanelType; icon: string; title: string; options?: string[] }> = [
     { id: 'collaborator', icon: 'person-plus', title: 'Add Collaborator', options: ['Create Session', 'Join Session'] },
     { id: 'chat', icon: 'chat-dots', title: 'Chat' },
-    { id: 'video', icon: 'camera-video', title: 'Video Call' }
+    { id: 'video', icon: 'camera-video', title: 'Video Call' },
+    { id: 'ai', icon: 'robot', title: 'AI Assistant' }
   ];
   panels: Record<PanelType, PanelState> = {
     collaborator: { isOpen: false, width: 300 },
     chat: { isOpen: false, width: 300 },
-    video: { isOpen: false, width: 300 }
+    video: { isOpen: false, width: 300 },
+    ai: { isOpen: false, width: 300 }
   };
 
   activePanel: PanelType | null = null;
@@ -47,11 +50,11 @@ export class RightPanelComponent {
 
   onPanelClick(panelId: PanelType): void {
     // Check authentication before toggling
-    if (!this.auth.isLoggedIn()) { // Adjust this check to your AuthService
-      alert('Login first to access special features!!!');
-      this.router.navigate(['/login']);
-      return;
-    }
+    // if (!this.auth.isLoggedIn()) { // Adjust this check to your AuthService
+    //   alert('Login first to access special features!!!');
+    //   this.router.navigate(['/login']);
+    //   return;
+    // }
     this.togglePanel(panelId);
     // Optionally update query param for panel state
     this.router.navigate([], {

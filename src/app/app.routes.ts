@@ -13,7 +13,7 @@ export const routes: Routes = [
 
   {
     path: 'collaborate',
-    canActivate: [AuthGuard], // <-- Protect collaborate and its children
+    // canActivate: [AuthGuard], // <-- Protect collaborate and its children
     children: [
       {
         path: '',
@@ -24,7 +24,7 @@ export const routes: Routes = [
   {
     path: 'collaborate/:sessionId',
     component: CodeEditorComponent,
-    canActivate: [AuthGuard] // <-- Protect session-specific collaborate
+    // canActivate: [AuthGuard] // <-- Protect session-specific collaborate
   },
   // ... other routes ...
 ];
