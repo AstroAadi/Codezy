@@ -1,0 +1,75 @@
+<div class="ai-panel">
+  <div class="ai-header">
+    <div class="title">AI Assistant</div>
+  </div>
+
+  <div class="chat-container">
+    <div class="messages" #messagesContainer>
+      <div *ngFor="let message of messages" class="message-row" [ngClass]="message.type">
+        <div class="avatar" [ngClass]="{'user': message.type === 'user', 'assistant': message.type === 'assistant'}">
+          <span *ngIf="message.type === 'assistant'">AI</span>
+          <span *ngIf="message.type === 'user'">You</span>
+        </div>
+        <div class="bubble">
+          <div class="message-content">{{ message.content }}</div>
+          <div *ngIf="message.context" class="context-info">
+            <small>{{ message.context }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-container">
+    <div class="selected-contexts-container">
+      <div *ngFor="let context of selectedContexts" class="context-chip">
+        <i class="fas" [ngClass]="{'fa-folder': isFolder(context), 'fa-file-code': !isFolder(context)}"></i>
+        <span>{{ getContextName(context) }}</span>
+        <button class="icon-btn close-context" (click)="removeContext(context)">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+    <div class="input-bottom-row">
+      <button (click)="toggleContextPicker()" class="context-btn">
+        <i class="fas fa-paperclip"></i>
+      </button>
+      <textarea 
+        [(ngModel)]="userInput" 
+        placeholder="Ask me anything..."
+        (keydown)="handleKeydown($event)"
+        (input)="autoResizeTextarea($event)"
+        rows="1"
+        class="highlighted-input"
+      ></textarea>
+      <div class="input-actions">
+        <select [(ngModel)]="selectedModel" class="model-select">
+          <option value="claude sonnet 4.5">claude sonnet 4.5</option>
+          <option value="Cortext">Cortext</option>
+            </select>
+            <button (click)="sendMessage()" [disabled]="!userInput.trim()" class="send-btn">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+        <div class="context-picker" *ngIf="showContextPicker">
+          <div class="picker-header">
+            <span>Select Context</span>
+            <button class="icon-btn" (click)="closeContextPicker()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="picker-list">
+            <div *ngFor="let item of flatList; trackBy: trackByPath" class="picker-item" 
+                 (click)="selectAndAddContext(item.path)">
+              <div class="item-content" [style.paddingLeft.px]="item.depth * 12">
+                <i class="fas" [ngClass]="{'fa-folder': item.node.type === 'folder', 'fa-file-code': item.node.type === 'file'}"></i>
+                <span [class.folder]="item.node.type === 'folder'">{{ item.node.name }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
