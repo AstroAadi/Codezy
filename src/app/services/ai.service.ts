@@ -3,41 +3,258 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { SelectedFileService } from './selected-file.service';
 import { FileNode } from '../project-explorer/project-explorer.component';
+import { EditorActionsService, AiFileChangePayload, AiModification } from './editor-actions.service';
+import { CollaborationService } from './collaboration.service';
 
-interface AiRequest {
-  message: string;
-  model: string;
-  context?: string;
-}
-
-interface AiResponse {
+interface StructuredAiRequestContextFile {
+  path: string;
   content: string;
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+interface StructuredAiRequestContextTreeNode {
+  name: string;
+  type: 'file' | 'folder';
+  children?: StructuredAiRequestContextTreeNode[];
+}
+
+interface StructuredAiRequestContext {
+  open_files: StructuredAiRequestContextFile[];
+  workspace_tree: { root: string; children: StructuredAiRequestContextTreeNode[] };
+}
+
+export interface StructuredAiRequest {
+  query: string;
+  context: StructuredAiRequestContext;
+  session_id?: string;
+}
+
+type AiOperation = 'replace' | 'insert' | 'delete' | 'insert_before';
+
+interface AiResponseCodeChangeModification {
+  operation: AiOperation;
+  start_line: number;
+  end_line: number;
+  old_content?: string;
+  new_content?: string;
+}
+
+interface AiResponseCodeChangeItem {
+  file: string;
+  modifications: AiResponseCodeChangeModification[];
+}
+
+interface AiResponseCodeChanges {
+  type: 'code_changes';
+  changes: AiResponseCodeChangeItem[];
+  summary?: string;
+}
+
+interface AiResponseCodeGenerationItem {
+  file: string;
+  content: string;
+}
+
+interface AiResponseCodeGeneration {
+  type: 'code_generation';
+  changes: AiResponseCodeGenerationItem[];
+  summary?: string;
+}
+
+type AiStructuredResponse = AiResponseCodeChanges | AiResponseCodeGeneration | { content: string };
+
+@Injectable({ providedIn: 'root' })
 export class AiService {
   constructor(
     private http: HttpClient,
-    private selectedFileService: SelectedFileService
+    private selectedFileService: SelectedFileService,
+    private editorActions: EditorActionsService,
+    private collaborationService: CollaborationService
   ) {}
 
-  async sendMessage(request: AiRequest): Promise<AiResponse> {
+  // Build structured request per user’s expected format
+  async buildStructuredRequest(query: string): Promise<StructuredAiRequest> {
+    const openFiles: StructuredAiRequestContextFile[] = [];
+    const selected = this.selectedFileService.getSelectedFile();
+    if (selected && selected.type === 'file') {
+      const content = await this.readFileContent(selected.path);
+      openFiles.push({ path: selected.path, content });
+    }
+
+    const projectTree = await this.getProjectTree();
+    const contextTreeChildren = projectTree.map(n => this.toRequestTreeNode(n));
+    const sessionId = this.collaborationService.getCurrentSessionId() || undefined;
+
+    return {
+      query,
+      context: {
+        open_files: openFiles,
+        workspace_tree: { root: '/project', children: contextTreeChildren }
+      },
+      session_id: sessionId
+    };
+  }
+
+  async sendStructuredRequest(req: StructuredAiRequest): Promise<AiStructuredResponse> {
     try {
-      const response = await this.http.post<AiResponse>(
-        `${environment.apiUrl}/ai/chat`,
-        request
+      const response = await this.http.post<AiStructuredResponse>(
+        `${environment.apiUrl}/chat`,
+        req
       ).toPromise();
-      
-      if (!response) {
-        throw new Error('No response from server');
-      }
-      
+      if (!response) throw new Error('No response from server');
       return response;
     } catch (error) {
-      console.error('Error sending message to AI:', error);
+      console.error('Error sending structured AI request:', error);
       throw error;
+    }
+  }
+
+  async applyResponse(resp: AiStructuredResponse): Promise<{ appliedChangesCount: number; generatedFilesCount: number; summary?: string }>
+  {
+    if (!resp) return { appliedChangesCount: 0, generatedFilesCount: 0 };
+    let appliedChangesCount = 0;
+    let generatedFilesCount = 0;
+    let summary: string | undefined = (resp as any).summary;
+
+    if ((resp as any).type === 'code_changes') {
+      const r = resp as AiResponseCodeChanges;
+      appliedChangesCount = await this.applyCodeChanges(r.changes);
+    } else if ((resp as any).type === 'code_generation') {
+      const r = resp as AiResponseCodeGeneration;
+      generatedFilesCount = await this.applyCodeGeneration(r.changes);
+    } else if ((resp as any).content) {
+      // Plain assistant content
+      summary = (resp as any).content;
+    }
+
+    return { appliedChangesCount, generatedFilesCount, summary };
+  }
+
+  private async applyCodeChanges(changes: AiResponseCodeChangeItem[]): Promise<number> {
+    if (!Array.isArray(changes) || changes.length === 0) return 0;
+
+    // Broadcast to CodeEditor for current file, and update others via localStorage
+    const payloads: AiFileChangePayload[] = changes.map(c => ({
+      file: c.file,
+      modifications: c.modifications as AiModification[]
+    }));
+
+    this.editorActions.applyAiChanges(payloads);
+
+    // Also persist updates for non-open files in localStorage
+    try {
+      const raw = localStorage.getItem('fileStructure');
+      if (raw) {
+        const tree: FileNode[] = JSON.parse(raw);
+        for (const change of changes) {
+          const node = this.findFileNodeByPath(tree, change.file);
+          if (node) {
+            const original = node.content || '';
+            const updated = this.applyModsToText(original, change.modifications);
+            node.content = updated;
+          }
+        }
+        localStorage.setItem('fileStructure', JSON.stringify(tree));
+      }
+    } catch (err) {
+      console.error('Error persisting code changes to localStorage', err);
+    }
+
+    return changes.length;
+  }
+
+  private applyModsToText(text: string, mods: AiResponseCodeChangeModification[]): string {
+    if (!mods || mods.length === 0) return text;
+    const lines = text.split('\n');
+    // Apply bottom-up to keep indices stable
+    const ordered = [...mods].sort((a, b) => b.start_line - a.start_line);
+    for (const m of ordered) {
+      const startIdx = Math.max(0, m.start_line - 1);
+      const endIdx = Math.max(0, m.end_line - 1);
+      const rangeText = lines.slice(startIdx, endIdx + 1).join('\n');
+      // Try to verify old_content; if mismatch, attempt global text replacement
+      if (m.old_content && m.old_content.trim() && rangeText.trim() !== (m.old_content || '').trim()) {
+        // Fallback: global replace first occurrence
+        if (m.operation === 'replace' && m.new_content) {
+          const idx = text.indexOf(m.old_content!);
+          if (idx >= 0) {
+            text = text.slice(0, idx) + m.new_content + text.slice(idx + m.old_content!.length);
+            // Recompute lines after replacement for subsequent ops
+            const newLines = text.split('\n');
+            for (let i = 0; i < newLines.length; i++) lines[i] = newLines[i];
+            continue;
+          }
+        }
+      }
+      switch (m.operation) {
+        case 'replace': {
+          const newLines = (m.new_content || '').split('\n');
+          lines.splice(startIdx, endIdx - startIdx + 1, ...newLines);
+          break;
+        }
+        case 'delete': {
+          lines.splice(startIdx, endIdx - startIdx + 1);
+          break;
+        }
+        case 'insert_before': {
+          const newLines = (m.new_content || '').split('\n');
+          lines.splice(startIdx, 0, ...newLines);
+          break;
+        }
+        case 'insert': {
+          const newLines = (m.new_content || '').split('\n');
+          lines.splice(endIdx + 1, 0, ...newLines);
+          break;
+        }
+      }
+    }
+    return lines.join('\n');
+  }
+
+  private async applyCodeGeneration(changes: AiResponseCodeGenerationItem[]): Promise<number> {
+    if (!Array.isArray(changes) || changes.length === 0) return 0;
+    try {
+      const raw = localStorage.getItem('fileStructure');
+      const tree: FileNode[] = raw ? JSON.parse(raw) : [];
+      for (const ch of changes) {
+        this.ensurePathAndAddFile(tree, ch.file, ch.content || '');
+        // Notify explorer to add file
+        this.collaborationService.ensureFileExists(ch.file, ch.content || '');
+      }
+      localStorage.setItem('fileStructure', JSON.stringify(tree));
+    } catch (err) {
+      console.error('Error applying code generation', err);
+    }
+    return changes.length;
+  }
+
+  private ensurePathAndAddFile(tree: FileNode[], fullPath: string, content: string) {
+    const parts = fullPath.split('/').filter(Boolean);
+    let current: FileNode[] = tree;
+    let constructedPath = '';
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      constructedPath = constructedPath ? `${constructedPath}/${part}` : part;
+      const isLast = i === parts.length - 1;
+      let node = current.find(n => n.name === part);
+      if (!node) {
+        node = {
+          name: part,
+          type: isLast ? 'file' : 'folder',
+          children: isLast ? undefined : [],
+          path: constructedPath,
+          content: isLast ? content : undefined,
+          isExpanded: true
+        };
+        current.push(node);
+      } else if (isLast) {
+        node.type = 'file';
+        node.content = content;
+        node.path = constructedPath;
+      }
+      if (!isLast) {
+        if (!node.children) node.children = [];
+        current = node.children;
+      }
     }
   }
 
@@ -138,5 +355,13 @@ export class AiService {
   // Public wrapper to fetch a file's content by path
   async fetchFileContent(path: string): Promise<string> {
     return this.readFileContent(path);
+  }
+
+  private toRequestTreeNode(node: FileNode): StructuredAiRequestContextTreeNode {
+    return {
+      name: node.name,
+      type: node.type,
+      children: node.children ? node.children.map(c => this.toRequestTreeNode(c)) : undefined
+    };
   }
 }

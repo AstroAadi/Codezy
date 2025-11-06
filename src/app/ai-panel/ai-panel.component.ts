@@ -92,29 +92,9 @@ export class AiPanelComponent implements OnInit, AfterViewChecked {
 
   async sendMessage() {
     if (!this.userInput.trim()) return;
-
-    // Create context string from all selected contexts
-    let contextString = '';
-    if (this.selectedContexts.length > 0) {
-      for (const contextPath of this.selectedContexts) {
-        const node = this.findNodeInFlatList(contextPath);
-        if (node) {
-          if (node.type === 'file') {
-            const content = await this.aiService.fetchFileContent(node.path || contextPath);
-            contextString += `File: ${node.name}\n\n${content}\n\n`;
-          } else {
-            contextString += `Folder: ${node.name}\n\n${this.stringifyNode(node)}\n\n`;
-          }
-        }
-      }
-    }
-
-    const userMessage: Message = {
-      type: 'user',
-      content: this.userInput,
-      context: contextString || undefined
-    };
-
+    // Show the user message immediately
+    const userMessage: Message = { type: 'user', content: this.userInput };
+    
     this.messages.push(userMessage);
     this.shouldScrollToBottom = true;
     
@@ -132,16 +112,16 @@ export class AiPanelComponent implements OnInit, AfterViewChecked {
     }
 
     try {
-      const response = await this.aiService.sendMessage({
-        message: input,
-        model: this.selectedModel,
-        context: this.selectedContext || undefined
-      });
+      // Build structured request and send to backend
+      const req = await this.aiService.buildStructuredRequest(input);
+      const resp = await this.aiService.sendStructuredRequest(req);
+      const result = await this.aiService.applyResponse(resp);
 
-      this.messages.push({
-        type: 'assistant',
-        content: response.content
-      });
+      // Show assistant summary and what was applied
+      const summaryText = result.summary
+        ? result.summary
+        : `Applied ${result.appliedChangesCount} change(s) and generated ${result.generatedFilesCount} file(s).`;
+      this.messages.push({ type: 'assistant', content: summaryText });
       this.shouldScrollToBottom = true;
     } catch (error) {
       this.messages.push({

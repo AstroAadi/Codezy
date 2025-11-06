@@ -24,7 +24,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CollaborationService } from '../services/collaboration.service';
 import { FileNode } from '../project-explorer/project-explorer.component';
 import CodeMirror from 'codemirror';
-import { EditorActionsService } from '../services/editor-actions.service';
+import { EditorActionsService, AiFileChangePayload, AiModification } from '../services/editor-actions.service';
 
 @Component({
     selector: 'app-code-editor',
@@ -193,6 +193,34 @@ export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
         case 'find': this.find(); break;
         case 'replace': this.replace(); break;
         case 'delete': this.delete(); break;
+      }
+    });
+
+    // Apply AI changes to the currently open file when payloads arrive
+    this.editorActions.aiChanges$.subscribe((changes: AiFileChangePayload[]) => {
+      if (!changes || !this.file) return;
+      const target = changes.find(c => c.file === this.file!.path);
+      if (target && target.modifications && target.modifications.length > 0) {
+        this.applyModificationsToCurrentDoc(target.modifications);
+        // Update local state and selected file content
+        const cm = this.codemirror?.codeMirror;
+        const updated = cm ? cm.getValue() : this.code;
+        this.code = updated;
+        if (this.file) {
+          this.file.content = updated;
+        }
+        // Persist to localStorage under fileStructure for consistency
+        try {
+          const raw = localStorage.getItem('fileStructure');
+          if (raw) {
+            const tree = JSON.parse(raw);
+            const node = this.findFileNodeByPath(tree, this.file!.path);
+            if (node) {
+              node.content = updated;
+              localStorage.setItem('fileStructure', JSON.stringify(tree));
+            }
+          }
+        } catch {}
       }
     });
   }
@@ -444,5 +472,73 @@ export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
         }
       });
     }
+  }
+
+  // Apply line-based modifications to the current CodeMirror document
+  private applyModificationsToCurrentDoc(mods: AiModification[]) {
+    const cm = this.codemirror?.codeMirror;
+    if (!cm) return;
+    const doc = cm.getDoc();
+    // Apply in a single operation for performance
+    cm.operation(() => {
+      // Sort modifications to avoid line index shifting issues: apply bottom-up by start_line
+      const ordered = [...mods].sort((a, b) => b.start_line - a.start_line);
+      for (const m of ordered) {
+        const from = { line: Math.max(0, m.start_line - 1), ch: 0 };
+        const toLine = Math.max(0, m.end_line - 1);
+        const toCh = doc.getLine(toLine)?.length ?? 0;
+        const to = { line: toLine, ch: toCh };
+        const currentText = doc.getRange(from, to);
+
+        // Optional verification of old_content; if mismatch, try to locate exact old_content
+        if (m.old_content && m.old_content.trim() && currentText.trim() !== (m.old_content || '').trim()) {
+          const foundPos = this.findTextInDoc(doc, m.old_content!);
+          if (foundPos) {
+            from.line = foundPos.from.line; from.ch = foundPos.from.ch;
+            to.line = foundPos.to.line; to.ch = foundPos.to.ch;
+          }
+        }
+
+        switch (m.operation) {
+          case 'replace':
+            doc.replaceRange(m.new_content || '', from, to);
+            break;
+          case 'delete':
+            doc.replaceRange('', from, to);
+            break;
+          case 'insert_before': {
+            const insertPos = { line: Math.max(0, m.start_line - 1), ch: 0 };
+            doc.replaceRange((m.new_content || '') + '\n', insertPos);
+            break;
+          }
+          case 'insert': {
+            const insertPos = { line: Math.max(0, m.end_line - 1), ch: 0 };
+            // Insert after the end_line by adding at the beginning of that line
+            doc.replaceRange((m.new_content || '') + '\n', insertPos);
+            break;
+          }
+        }
+      }
+    });
+  }
+
+  private findFileNodeByPath(nodes: any[], path: string): any | null {
+    for (const n of nodes) {
+      if (n.path === path) return n;
+      if (n.type === 'folder' && n.children) {
+        const found = this.findFileNodeByPath(n.children, path);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  private findTextInDoc(doc: CodeMirror.Doc, text: string): { from: CodeMirror.Position, to: CodeMirror.Position } | null {
+    // @ts-ignore: searchcursor is loaded as addon
+    const cursor = (doc as any).cm.getSearchCursor(text, { line: 0, ch: 0 });
+    if (cursor.findNext()) {
+      return { from: cursor.from(), to: cursor.to() };
+    }
+    return null;
   }
 }
