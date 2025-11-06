@@ -1,4 +1,4 @@
-<div class="sidebar-container">
+<div class="sidebar-container" (click)="onBackgroundClick($event)">
   <h4 class="sidebar-title">Files</h4>
   <ul class="file-list">
     <ng-container *ngFor="let file of files">
@@ -29,18 +29,15 @@
              (blur)="$event.target !== document.activeElement && finishAdd(node, parent ? parent : level > 0 ? node.parent : undefined)" 
              #inputElement
              autofocus />
-      <button (click)="finishAdd(node, parent ? parent : level > 0 ? node.parent : undefined); $event.preventDefault();">✔</button>
-      <button (click)="cancelAdd(parent ? parent : level > 0 ? node.parent : undefined); $event.preventDefault();">✖</button>
     </ng-container>
     <ng-container *ngIf="!node.isEditingName">
-      <span *ngIf="node.type === 'folder'" (click)="node.isExpanded = !node.isExpanded">📁</span>
-      <span *ngIf="node.type === 'file'">📄</span>
+      <i *ngIf="node.type === 'folder'" 
+         class="fas chevron-icon" 
+         [ngClass]="{'fa-chevron-right': !node.isExpanded, 'fa-chevron-down': node.isExpanded}"
+         (click)="toggleFolder(node, $event)"></i>
+      <span class="spacer" *ngIf="node.type === 'file'"></span>
+      <i class="fas fa-file-code" *ngIf="node.type === 'file'"></i>
       {{ node.name }}
-      <!-- Small add buttons for folders, only if no child is being edited -->
-      <span *ngIf="canShowAddButtons(node)">
-        <button style="font-size:10px;padding:2px 5px;margin-left:4px;" (click)="startAdd('file', node); $event.stopPropagation();">＋</button>
-        <button style="font-size:10px;padding:2px 5px;margin-left:2px;" (click)="startAdd('folder', node); $event.stopPropagation();">📁＋</button>
-      </span>
     </ng-container>
   </li>
   <ul class="file-list" *ngIf="node.type === 'folder' && node.isExpanded && node.children">

@@ -44,17 +44,74 @@
   transform: translateY(-1px) scale(1.01);
 }
 
-.file-item .add-btn {
-  margin-left: auto;
-  background: none;
+.file-item .icon-btn {
+  background: transparent;
   border: none;
   color: #8ecae6;
   cursor: pointer;
+  padding: 2px 4px;
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   font-size: 12px;
+  border-radius: 4px;
+  transition: all 0.2s;
 }
 
-.file-item .add-btn:hover {
+.file-item .icon-btn:hover {
   color: #219ebc;
+  background: rgba(142, 202, 230, 0.1);
+}
+
+.file-item .add-buttons {
+  margin-left: auto;
+  display: flex;
+  gap: 2px;
+}
+
+.file-item i.fas {
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+  margin-right: 4px;
+}
+
+.file-item i.fa-file-code {
+  color: #8ecae6;
+}
+
+.file-item .chevron-icon {
+  color: #8b949e;
+  font-size: 12px;
+  width: 16px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.file-item .chevron-icon:hover {
+  color: #c9d1d9;
+}
+
+.file-item .spacer {
+  width: 16px;
+  display: inline-block;
+}
+
+/* VS Code like folder indentation line */
+.file-list ul {
+  position: relative;
+}
+
+.file-list ul:before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #404754;
+  opacity: 0.4;
 }
 
 .file-item input {
