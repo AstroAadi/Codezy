@@ -1,3 +1,10 @@
+  // onBackgroundClick(event: MouseEvent) {
+  //   // Only deselect if clicking directly on the container, not its children
+  //   if (event.target === event.currentTarget) {
+  //     this.selectedNode = null;
+  //   }
+  // }
+
 import { DOCUMENT } from '@angular/common';
 import { Component, EventEmitter, Inject, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -27,13 +34,29 @@ export class ProjectExplorerComponent {
     return node.type === 'folder' && !(node.children && node.children.some(child => child.isEditingName));
   }
   selectedNode: FileNode | null = null;
+
+    onBackgroundClick(event: MouseEvent) {
+      // Only deselect if clicking directly on the container, not its children
+      if (event.target === event.currentTarget) {
+        this.selectedNode = null;
+      }
+    }
+
   constructor(
     @Inject(DOCUMENT) public document: Document,
     public collaborationService: CollaborationService,
     private toolbarActions: ToolbarActionsService
   ) {
-    this.toolbarActions.newFile.subscribe(() => this.startAdd('file'));
-    this.toolbarActions.addFolder.subscribe(() => this.startAdd('folder'));
+    this.toolbarActions.newFile.subscribe(() => {
+      // Create in selected folder if it's a folder, otherwise in root
+      const targetFolder = this.selectedNode?.type === 'folder' ? this.selectedNode : undefined;
+      this.startAdd('file', targetFolder);
+    });
+    this.toolbarActions.addFolder.subscribe(() => {
+      // Create in selected folder if it's a folder, otherwise in root
+      const targetFolder = this.selectedNode?.type === 'folder' ? this.selectedNode : undefined;
+      this.startAdd('folder', targetFolder);
+    });
     this.toolbarActions.openFile.subscribe(() => this.triggerFileInput());
     this.toolbarActions.deleteFile.subscribe(() => this.deleteSelected());
   }
@@ -58,33 +81,45 @@ export class ProjectExplorerComponent {
     this.selectedNode = file;
     if (file.type === 'file') {
       this.fileSelected.emit(file);
-    } else if (file.type === 'folder') {
-      file.isExpanded = !file.isExpanded;
+    }
+  }
+
+  toggleFolder(folder: FileNode, event: MouseEvent) {
+    event.stopPropagation();
+    if (folder.type === 'folder') {
+      folder.isExpanded = !folder.isExpanded;
+      this.selectedNode = folder;
     }
   }
 
   startAdd(type: 'file' | 'folder', parent?: FileNode) {
     let siblings: FileNode[];
-    if (parent) {
-      if (!parent.children) parent.children = [];
-      siblings = parent.children;
-    } else {
-      siblings = this.files;
-    }
-    // Prevent multiple edit nodes
-    if (siblings.some(n => n.isEditingName)) {
-      return;
-    }
-    const newNode: FileNode = {
-      name: '',
-      type,
-      isEditingName: true,
-      children: type === 'folder' ? [] : undefined,
-      path: ''
-    };
-    siblings.push(newNode);
-    this.editingNode = newNode;
-    this.newNodeType = type;
+      // Only use parent if it's explicitly a folder
+      if (parent && parent.type === 'folder') {
+        if (!parent.children) parent.children = [];
+        siblings = parent.children;
+        // Ensure the folder is expanded when adding
+        parent.isExpanded = true;
+      } else {
+        siblings = this.files;
+      }
+    
+      // Prevent multiple edit nodes
+      if (siblings.some(n => n.isEditingName)) {
+        return;
+      }
+
+      const newNode: FileNode = {
+        name: '',
+        type,
+        isEditingName: true,
+        children: type === 'folder' ? [] : undefined,
+        path: '',
+        parent: parent // Store parent reference for path construction
+      };
+      siblings.push(newNode);
+      this.editingNode = newNode;
+      this.newNodeType = type;
   }
 
 
@@ -94,7 +129,6 @@ export class ProjectExplorerComponent {
     
     // Validate empty name
     if (!node.name || node.name.trim() === '') {
-      alert('File/folder name cannot be empty');
       this.cancelAdd(actualParent);
       return;
     }
