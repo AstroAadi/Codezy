@@ -7,6 +7,7 @@ import { EditorActionsService } from '../services/editor-actions.service';
 import { ToolbarActionsService } from '../services/toolbar-actions.service';
 import { ThemeService } from '../services/theme.service';
 import { BottomPanelComponent } from '../bottom-panel/bottom-panel.component';
+import { FileNode } from '../project-explorer/project-explorer.component';
 
 @Component({
     selector: 'app-navbar',
@@ -64,7 +65,7 @@ export class NavbarComponent {
       if (option === 'New File') {
         this.toolbarActions.newFile.emit();
       } else if (option === 'Save File') {
-        this.toolbarActions.saveFile.emit();
+        this.saveFile(); // Direct call to our saveFile method
       } else if (option === 'Open File') {
         this.toolbarActions.openFile.emit();
       } else if (option === 'Create folder') {
@@ -122,7 +123,67 @@ export class NavbarComponent {
 // FILE
 newFile() { alert('New File created.'); }
 saveFile() {
-  this.toolbarActions.saveFile.emit();
+  // Generate random 4 characters
+  const randomChars = Math.random().toString(36).substring(2, 6);
+  const projectName = `project-${randomChars}`;
+  
+  // Get the file structure from local storage
+  const fileStructure = localStorage.getItem('fileStructure');
+  if (!fileStructure) {
+    alert('No files to save');
+    return;
+  }
+
+  // Import JSZip dynamically
+  import('jszip').then(({ default: JSZip }) => {
+    const zip = new JSZip();
+    const projectFolder = zip.folder(projectName);
+    
+    if (!projectFolder) {
+      alert('Error creating zip folder');
+      return;
+    }
+
+    const files = JSON.parse(fileStructure) as FileNode[];
+    
+    // Recursive function to add files and folders to zip
+    const addToZip = (items: FileNode[], currentPath: string = '') => {
+      items.forEach(item => {
+        if (item.type === 'file') {
+          // Get file content from localStorage or use the content in the file node
+          const content = item.content || '';
+          projectFolder.file(currentPath + item.name, content);
+        } else if (item.type === 'folder' && item.children) {
+          // Create folder and process its children
+          const folderPath = currentPath + item.name + '/';
+          addToZip(item.children, folderPath);
+        }
+      });
+    };
+
+    // Start adding files to zip
+    addToZip(files);
+
+    // Generate and download zip file
+    zip.generateAsync({ type: 'blob' })
+      .then(content => {
+        const url = window.URL.createObjectURL(content);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = projectName + '.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(error => {
+        console.error('Error generating zip file:', error);
+        alert('Error generating zip file');
+      });
+  }).catch(error => {
+    console.error('Error loading JSZip:', error);
+    alert('Error loading zip library');
+  });
 }
 openFile() { 
   this.toolbarActions.openFile.emit();
