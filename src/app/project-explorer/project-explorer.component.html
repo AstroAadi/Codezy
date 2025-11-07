@@ -21,7 +21,7 @@
   <li class="file-item"
       [class.folder-item]="node.type === 'folder'"
       [class.selected]="node === selectedNode" 
-      [style.paddingLeft.px]="level * 20"
+      [style.paddingLeft.px]="level * 16"
       (click)="onFileClick(node, $event)">
     <ng-container *ngIf="node.isEditingName">
       <input [(ngModel)]="node.name" 
@@ -40,10 +40,10 @@
       {{ node.name }}
     </ng-container>
   </li>
-  <ul class="file-list" *ngIf="node.type === 'folder' && node.isExpanded && node.children">
+  <ng-container *ngIf="node.type === 'folder' && node.isExpanded && node.children">
     <ng-container *ngFor="let child of node.children">
       <ng-container *ngTemplateOutlet="renderNode; context: { $implicit: child, level: level + 1, parent: node }"></ng-container>
     </ng-container>
-  </ul>
+  </ng-container>
 </ng-template>
 <input type="file" id="explorer-file-input" style="display:none" (change)="onFileInputChange($event)">
