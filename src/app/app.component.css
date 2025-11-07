@@ -2,34 +2,35 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow-x: hidden
 }
 
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
   height: 100vh;
   width: 100vw;
-  /* overflow-x: hidden;  */
 }
 
 .main-layout {
   display: flex;
-  height: calc(100vh - 80px); /* Adjust if your navbar/toolbar height changes */
+  flex: 1;
   min-height: 0;
   overflow: hidden;
+  position: relative;
 }
 
 .sidebar-area {
   background: #23272e;
   color: #fff;
-  height: 100%;
+  height: calc(100vh - 120px); /* Increased height */
   box-shadow: 2px 0 6px rgba(0,0,0,0.08);
   display: flex;
   flex-direction: column;
   transition: width 0.2s;
   overflow: hidden;
-  position: relative;
+  position: relative; /* Changed from absolute */
   min-width: 0;
+  z-index: 10;
 }
 
 .sidebar-area.closed {
@@ -53,6 +54,45 @@ html, body {
   background: transparent;
 }
 
+.content-area {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  position: relative;
+  background-color: #2b2b2b;
+  transition: margin-right 0.2s;
+  height: 100%;
+}
+
+app-code-editor {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  margin-bottom: 48px; /* Space for bottom toolbar */
+}
+
+app-bottom-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 48px; /* Only toolbar height by default */
+  background-color: #2b2b2b;
+  border-top: 1px solid #404040;
+  z-index: 1000;
+  display: block;
+  transition: height 0.3s ease;
+}
+
+.content-area.with-bottom-panel {
+  padding-bottom: 348px; /* Full panel height when active */
+}
+
+.content-area.with-bottom-panel app-bottom-panel {
+  height: 348px; /* Expand to full height when panel is active */
+}
+
 .sidebar-resize-bar:hover,
 .sidebar-resize-bar.active {
   background: rgba(120, 180, 255, 0.08);
@@ -63,22 +103,6 @@ html, body {
   color: #8ecae6;
   opacity: 0.8;
   pointer-events: none;
-  /* user-select: none; */
-}
-
-.content-area {
-  flex: 1 1 auto;
-  padding: 0;
-  margin-bottom: 48px;
-  height: 100%;
-  overflow: auto;
-  transition: margin-right 0.2s;
-  background-color: #2b2b2b;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
 }
 .content-area::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */

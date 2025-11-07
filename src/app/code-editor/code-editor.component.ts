@@ -25,9 +25,11 @@ import { CollaborationService } from '../services/collaboration.service';
 import { FileNode } from '../project-explorer/project-explorer.component';
 import CodeMirror from 'codemirror';
 import { EditorActionsService, AiFileChangePayload, AiModification } from '../services/editor-actions.service';
+import { SelectedFileService } from '../services/selected-file.service';
 
 @Component({
     selector: 'app-code-editor',
+    standalone: true,
     imports: [CommonModule, FormsModule, CodemirrorModule],
     template: `
     <div class="editor-container">
@@ -46,6 +48,36 @@ import { EditorActionsService, AiFileChangePayload, AiModification } from '../se
         ></ngx-codemirror>
       </div>
     </div>
+    <style>
+      :host {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      .editor-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        position: relative;
+      }
+      .editor-codemirror-wrapper {
+        flex: 1;
+        position: relative;
+        height: 100%;
+      }
+      .editor-header {
+        flex-shrink: 0;
+      }
+      ::ng-deep .CodeMirror {
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+    </style>
     <div *ngIf="showFindBox" class="find-box">
       <input [(ngModel)]="findQuery" (keydown.enter)="performFind()" placeholder="Find..." autofocus />
       <button (click)="performFind()">Find</button>
@@ -59,13 +91,14 @@ import { EditorActionsService, AiFileChangePayload, AiModification } from '../se
       background-color: #2b2b2b;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      position: relative;
     }
     .editor-header {
       padding: 8px;
       background-color: #3c3f41;
       border-bottom: 1px solid #323232;
       flex: 0 0 auto;
+      z-index: 1;
     }
     .connected-users {
       display: flex;
@@ -81,14 +114,15 @@ import { EditorActionsService, AiFileChangePayload, AiModification } from '../se
     }
     .editor-codemirror-wrapper {
       flex: 1 1 auto;
-      min-height: 0;
-      overflow: auto;
-      display: flex;
-      flex-direction: column;
-      scrollbar-width: none; /* Firefox */
-      -ms-overflow-style: none; /* IE and Edge */
+      position: relative;
+      height: calc(100% - 40px);
     }
     ::ng-deep .CodeMirror {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       height: 100%;
       width: 100%;
       font-family: 'JetBrains Mono', monospace;
@@ -96,12 +130,10 @@ import { EditorActionsService, AiFileChangePayload, AiModification } from '../se
       line-height: 1.6;
       background-color: #2b2b2b;
       color: #a9b7c6;
-      display: flex;
-      flex: 1 1 auto;
     }
     ::ng-deep .CodeMirror-scroll {
       height: 100%;
-      overflow-y: auto;
+      overflow-y: scroll;
       overflow-x: auto;
     }
     ::ng-deep .CodeMirror-gutters {
@@ -115,12 +147,18 @@ import { EditorActionsService, AiFileChangePayload, AiModification } from '../se
       background-color: #2b2b2b;
       color: #a9b7c6;
     }
-    ::ng-deep .CodeMirror-scroll {
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
+    /* Style the scrollbars */
     ::ng-deep .CodeMirror-scroll::-webkit-scrollbar {
-      display: none;
+      width: 12px;
+      height: 12px;
+    }
+    ::ng-deep .CodeMirror-scroll::-webkit-scrollbar-track {
+      background: #2b2b2b;
+    }
+    ::ng-deep .CodeMirror-scroll::-webkit-scrollbar-thumb {
+      background-color: #4a4a4a;
+      border-radius: 6px;
+      border: 3px solid #2b2b2b;
     }
   `]
 })
@@ -181,8 +219,28 @@ export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
     private router: Router,
     private websocketService: WebsocketService,
     private collaborationService: CollaborationService,
-    private editorActions: EditorActionsService
+    private editorActions: EditorActionsService,
+    private selectedFileService: SelectedFileService
   ) {
+    // Subscribe to file structure changes
+    this.subscriptions.push(
+      this.collaborationService.fileStructureChanged$.subscribe(() => {
+        // Reload file structure from localStorage
+        const savedFiles = localStorage.getItem('fileStructure');
+        if (savedFiles) {
+          this.files = JSON.parse(savedFiles);
+          
+          // If we have a current file, check if it still exists
+          if (this.file) {
+            const currentFile = this.findFileNodeByPath(this.files, this.file.path);
+            if (!currentFile) {
+              // Current file was deleted, clear editor
+              this.file = null;
+              this.code = '';
+            }
+          }
+        }
+      }));
     this.editorActions.action$.subscribe(action => {
       switch(action) {
         case 'undo': this.undo(); break;
@@ -293,8 +351,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
     this.code = newCode;
     if (this.file) {
         this.file.content = newCode; // Save code to the file object
-        localStorage.setItem(this.file.path, newCode); // Save code to local storage
-        // Also update the fileStructure in localStorage to persist content changes across refreshes
+        // Update the selected file content in the service
+        this.selectedFileService.updateSelectedFileContent(newCode);
+        // Also update the fileStructure in localStorage
         const fileStructureString = localStorage.getItem('fileStructure');
         if (fileStructureString) {
             try {

@@ -1,16 +1,13 @@
-<div class="bottom-panel-container" [style.display]="activePanel ? 'block' : 'none'">
-  <div class="panel-resize-bar" (mousedown)="startResize($event)" (mouseenter)="showResizeArrow = true" (mouseleave)="showResizeArrow = false">
-    <span class="resize-arrow" *ngIf="showResizeArrow"></span>
+<div class="bottom-panel-container" [class.show]="activePanel !== null">
+  <div class="panel-resize-bar" (mousedown)="startResize($event)">
+    <span class="resize-arrow">⋮</span>
   </div>
-  <div class="panel-header">
-    <div class="drag-handle"></div>
-  </div>
-  <div class="panel-content" *ngIf="activePanel && panels[activePanel]" [style.height.px]="panels[activePanel].height">
+  <div class="panel-content">
     <div class="content-wrapper" *ngIf="activePanel !== 'output'">
       {{ getPanelContent(activePanel) }}
     </div>
-    <div *ngIf="activePanel === 'output'" style="height:100%;width:100%;overflow:auto;">
-      <app-output-panel style="height:100%;width:100%;display:block;"></app-output-panel>
+    <div *ngIf="activePanel === 'output'" class="output-wrapper">
+      <app-output-panel></app-output-panel>
     </div>
   </div>
 </div>

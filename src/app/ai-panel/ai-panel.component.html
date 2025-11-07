@@ -17,6 +17,18 @@
           </div>
         </div>
       </div>
+      <div *ngIf="isProcessing" class="message-row assistant">
+        <div class="avatar assistant">
+          <span>AI</span>
+        </div>
+        <div class="bubble thinking">
+          <div class="thinking-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -25,14 +37,14 @@
       <div *ngFor="let context of selectedContexts" class="context-chip">
         <i class="fas" [ngClass]="{'fa-folder': isFolder(context), 'fa-file-code': !isFolder(context)}"></i>
         <span>{{ getContextName(context) }}</span>
-        <button class="icon-btn close-context" (click)="removeContext(context)">
-          <i class="fas fa-times"></i>
+        <button class="icon-btn close-context" (click)="removeContext(context)" title="Remove context">
+          <i class="fas fa-times" aria-hidden="true"></i>
         </button>
       </div>
     </div>
     <div class="input-bottom-row">
-      <button (click)="toggleContextPicker()" class="context-btn">
-        <i class="fas fa-paperclip"></i>
+      <button (click)="toggleContextPicker()" class="context-btn" title="Add file context">
+        <i class="fas fa-paperclip" aria-hidden="true"></i>
       </button>
       <textarea 
         [(ngModel)]="userInput" 
@@ -41,22 +53,23 @@
         (input)="autoResizeTextarea($event)"
         rows="1"
         class="highlighted-input"
+        aria-label="Message input"
       ></textarea>
       <div class="input-actions">
-        <select [(ngModel)]="selectedModel" class="model-select">
-          <option value="claude sonnet 4.5">claude sonnet 4.5</option>
+        <select [(ngModel)]="selectedModel" class="model-select" title="Select AI model">
+          <option value="claude sonnet 4.5">claude sonnet 4</option>
           <option value="Cortext">Cortext</option>
             </select>
-            <button (click)="sendMessage()" [disabled]="!userInput.trim()" class="send-btn">
-              <i class="fas fa-paper-plane"></i>
+            <button (click)="sendMessage()" [disabled]="!userInput.trim() || isProcessing" class="send-btn" title="Send message">
+              <i class="fas fa-paper-plane" aria-hidden="true"></i>
             </button>
           </div>
         </div>
         <div class="context-picker" *ngIf="showContextPicker">
           <div class="picker-header">
             <span>Select Context</span>
-            <button class="icon-btn" (click)="closeContextPicker()">
-              <i class="fas fa-times"></i>
+            <button class="icon-btn" (click)="closeContextPicker()" title="Close context picker">
+              <i class="fas fa-times" aria-hidden="true"></i>
             </button>
           </div>
           <div class="picker-list">
@@ -71,5 +84,3 @@
         </div>
       </div>
     </div>
-  <!-- </div>
-</div> -->

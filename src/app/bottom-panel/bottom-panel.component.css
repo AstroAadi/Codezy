@@ -1,23 +1,82 @@
 .bottom-panel-container {
-    position: fixed;
-    bottom: 48px;
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    background-color: #2b2b2b;
+    height: calc(100% - 48px); /* Full height minus toolbar */
+    min-height: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    border-top: 1px solid #404040;
+  }
+
+  .bottom-panel-container.show {
+    display: flex; /* Show when active */
+  }
+
+  :host {
+    display: block;
+    height: 348px; /* Fixed total height including toolbar */
+    position: absolute;
+    bottom: 0;
     left: 0;
     right: 0;
     background-color: #2b2b2b;
-    border-top: 1px solid #323232;
     z-index: 1000;
-    overflow: hidden;
-    height: auto;
-    max-height: 40vh;
+  }
+
+  .panel-content {
+    flex: 1;
+    overflow: auto;
+    padding: 8px;
+  }
+
+  .output-wrapper {
+    height: 100%;
+  }
+
+  .panel-resize-bar {
+    position: absolute;
+    top: -6px;
+    left: 0;
+    right: 0;
+    height: 12px;
+    cursor: ns-resize;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent;
+    z-index: 10;
+  }
+
+  .panel-resize-bar:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .panel-resize-bar .resize-arrow {
+    color: #666;
+    font-size: 14px;
+    pointer-events: none;
   }
   
   .panel-content {
-    overflow-y: auto; /* Allow vertical scrolling */
-    overflow-x: hidden;
-    transition: height 0.2s;
+    flex: 1;
+    overflow: auto;
     background-color: #2b2b2b;
+    margin-top: 6px;
+  }
+
+  .output-wrapper {
     height: 100%;
-    min-height: 0;
+    width: 100%;
+    overflow: auto;
+  }
+
+  app-output-panel {
+    height: 100%;
+    width: 100%;
+    display: block;
   }
   
   .content-wrapper {
@@ -41,7 +100,32 @@
     padding: 4px;
     display: flex;
     justify-content: flex-start;
+    height: 48px;
     z-index: 1001;
+  }
+
+  .btn-group {
+    display: flex;
+    gap: 4px;
+  }
+
+  .btn-tool {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: transparent;
+    border: none;
+    color: #afb1b3;
+    cursor: pointer;
+  }
+
+  .btn-tool:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-tool.active {
+    background-color: rgba(255, 255, 255, 0.15);
   }
   
   .btn-tool {
