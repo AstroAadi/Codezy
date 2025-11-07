@@ -62,6 +62,14 @@ interface AiResponseCodeGeneration {
 
 type AiStructuredResponse = AiResponseCodeChanges | AiResponseCodeGeneration | { content: string };
 
+interface BackendResponse {
+  response: string;
+  parsed: AiStructuredResponse | null;
+  session_id: string;
+  is_code_change: boolean;
+  request_type: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AiService {
   constructor(
@@ -94,9 +102,9 @@ export class AiService {
     };
   }
 
-  async sendStructuredRequest(req: StructuredAiRequest): Promise<AiStructuredResponse> {
+  async sendStructuredRequest(req: StructuredAiRequest): Promise<AiStructuredResponse | BackendResponse> {
     try {
-      const response = await this.http.post<AiStructuredResponse>(
+      const response = await this.http.post<AiStructuredResponse | BackendResponse>(
         `${environment.apiUrl}/chat`,
         req
       ).toPromise();

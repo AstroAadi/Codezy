@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8000',
+  apiUrl: 'http://35.233.222.47:8000',
   wsTerminalUrl: 'ws://localhost:8000/terminal',
   wsSignalUrl: 'ws://localhost:8000/signal'
   // apiUrl:'https://codezy-backend-185224543792.asia-south2.run.app',

@@ -10,6 +10,14 @@ interface Message {
   context?: string;
 }
 
+interface BackendResponse {
+  response: string;
+  parsed: any;
+  session_id: string;
+  is_code_change: boolean;
+  request_type: string;
+}
+
 @Component({
   selector: 'app-ai-panel',
   standalone: true,
@@ -114,16 +122,37 @@ export class AiPanelComponent implements OnInit, AfterViewChecked {
     try {
       // Build structured request and send to backend
       const req = await this.aiService.buildStructuredRequest(input);
-      const resp = await this.aiService.sendStructuredRequest(req);
-      const result = await this.aiService.applyResponse(resp);
+      const backendResp = await this.aiService.sendStructuredRequest(req);
+      
+      // Handle the response based on its structure
+      if ('response' in backendResp) {
+        // New backend response format
+        const responseData = backendResp as unknown as BackendResponse;
 
-      // Show assistant summary and what was applied
-      const summaryText = result.summary
-        ? result.summary
-        : `Applied ${result.appliedChangesCount} change(s) and generated ${result.generatedFilesCount} file(s).`;
-      this.messages.push({ type: 'assistant', content: summaryText });
+        if (responseData.is_code_change && responseData.parsed) {
+          // Apply the code changes/generation if present
+          const result = await this.aiService.applyResponse(responseData.parsed);
+          // Show both the AI's message and the changes summary
+          this.messages.push({ type: 'assistant', content: responseData.response });
+          if (result.appliedChangesCount > 0 || result.generatedFilesCount > 0) {
+            const changesSummary = `\n\nChanges applied: ${result.appliedChangesCount} change(s) and ${result.generatedFilesCount} file(s) generated.`;
+            this.messages.push({ type: 'assistant', content: changesSummary });
+          }
+        } else {
+          // Just show the text response if no code changes
+          this.messages.push({ type: 'assistant', content: responseData.response });
+        }
+      } else {
+        // Legacy format - handle as before
+        const result = await this.aiService.applyResponse(backendResp);
+        const summaryText = result.summary
+          ? result.summary
+          : `Applied ${result.appliedChangesCount} change(s) and generated ${result.generatedFilesCount} file(s).`;
+        this.messages.push({ type: 'assistant', content: summaryText });
+      }
       this.shouldScrollToBottom = true;
     } catch (error) {
+      console.error('Error in sendMessage:', error);
       this.messages.push({
         type: 'assistant',
         content: 'Sorry, there was an error processing your request.'
