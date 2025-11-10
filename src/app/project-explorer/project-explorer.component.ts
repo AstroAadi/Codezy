@@ -1,9 +1,3 @@
-  // onBackgroundClick(event: MouseEvent) {
-  //   // Only deselect if clicking directly on the container, not its children
-  //   if (event.target === event.currentTarget) {
-  //     this.selectedNode = null;
-  //   }
-  // }
 
 import { DOCUMENT } from '@angular/common';
 import { Component, EventEmitter, Inject, Input, Output } from '@angular/core';
