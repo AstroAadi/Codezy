@@ -19,12 +19,24 @@ export interface Collaborator {
   providedIn: 'root'
 })
 export class CollaborationService {
+  private fileAddedSubject = new Subject<FileNode>();
+  private fileStructureChangedSubject = new Subject<void>();
   private collaborators = new BehaviorSubject<Collaborator[]>([]);
   private activeCollaborators = new BehaviorSubject<number>(0);
   private currentSessionId: string | null = null;
+  private isOwner: boolean = false;
+  private injector: Injector;
+  private _http: HttpClient | null = null;
+
+  fileAdded$ = this.fileAddedSubject.asObservable();
+  fileStructureChanged$ = this.fileStructureChangedSubject.asObservable();
+
+  notifyFileStructureChanged() {
+    this.fileStructureChangedSubject.next();
+  }
   
-  private injector: Injector;  // Lazy dependency injection
-  private _http: HttpClient | null = null; 
+  // private injector: Injector;  // Lazy dependency injection
+  // private _http: HttpClient | null = null; 
 
   constructor(injector: Injector, private router: Router, private websocketService: WebsocketService, private authService: AuthService) {
     this.injector = injector;
@@ -64,7 +76,7 @@ export class CollaborationService {
     return 'session_' + Math.random().toString(36).substr(2, 9);
   }
 
-  private isOwner: boolean = false;
+  // private isOwner: boolean = false;
 
   initializeSession(): string {
     if (!this.currentSessionId) {
@@ -140,7 +152,6 @@ export class CollaborationService {
     return this.http.post<{ joined: boolean }>(`${environment.apiUrl}/api/collaboration/joinSession`, payload); // Use environment.apiUrl
   }
 
-  fileAdded$ = new Subject<FileNode>();
   ensureFileExists(filePath: string, content: string) {
     // Traverse the file tree and create the file if it doesn't exist
     // For simplicity, emit a new FileNode for root-level files
@@ -150,7 +161,8 @@ export class CollaborationService {
       path: filePath,
       content
     };
-    this.fileAdded$.next(fileNode);
+    this.fileAddedSubject.next(fileNode);
+    this.notifyFileStructureChanged();
   }
 
   getCurrentUserEmail(): string | null {

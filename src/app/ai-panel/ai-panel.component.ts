@@ -1,8 +1,9 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewChecked, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AiService } from '../services/ai.service';
 import { FileNode } from '../project-explorer/project-explorer.component';
+import { Subscription } from 'rxjs';
 
 interface Message {
   type: 'user' | 'assistant';
@@ -25,7 +26,7 @@ interface BackendResponse {
   templateUrl: './ai-panel.component.html',
   styleUrls: ['./ai-panel.component.css']
 })
-export class AiPanelComponent implements OnInit, AfterViewChecked {
+export class AiPanelComponent implements OnInit, AfterViewChecked, OnDestroy {
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
   
   messages: Message[] = [];
@@ -33,6 +34,10 @@ export class AiPanelComponent implements OnInit, AfterViewChecked {
   selectedModel = 'claude sonnet 4.5';
   selectedContext: string | null = null;
   selectedContexts: string[] = [];
+  isProcessing = false;
+
+  private subscription: Subscription | undefined;
+  private loadingSubscription: Subscription | undefined;
 
   showContextPicker = false;
   projectTree: FileNode[] = [];
@@ -44,13 +49,60 @@ export class AiPanelComponent implements OnInit, AfterViewChecked {
   constructor(private aiService: AiService ) {}
 
   async ngOnInit() {
+    // Load saved messages from localStorage
+    this.loadSavedMessages();
     await this.loadProjectTree();
+    
+    // Subscribe to file structure changes
+    this.subscription = this.aiService.fileStructureChanged$.subscribe(() => {
+      this.loadProjectTree();
+    });
+
+    // Subscribe to loading state changes
+    this.loadingSubscription = this.aiService.isLoading$.subscribe(
+      isLoading => {
+        this.isProcessing = isLoading;
+        if (isLoading) {
+          this.shouldScrollToBottom = true;
+        }
+      }
+    );
   }
   
   ngAfterViewChecked() {
     if (this.shouldScrollToBottom) {
       this.scrollToBottom();
       this.shouldScrollToBottom = false;
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+    }
+    if (this.loadingSubscription) {
+      this.loadingSubscription.unsubscribe();
+    }
+    this.saveMessages();
+  }
+
+  private loadSavedMessages() {
+    const savedMessages = localStorage.getItem('ai_panel_messages');
+    if (savedMessages) {
+      try {
+        this.messages = JSON.parse(savedMessages);
+        this.shouldScrollToBottom = true;
+      } catch (err) {
+        console.error('Error loading saved messages:', err);
+      }
+    }
+  }
+
+  private saveMessages() {
+    try {
+      localStorage.setItem('ai_panel_messages', JSON.stringify(this.messages));
+    } catch (err) {
+      console.error('Error saving messages:', err);
     }
   }
   
@@ -99,11 +151,18 @@ export class AiPanelComponent implements OnInit, AfterViewChecked {
   }
 
   async sendMessage() {
-    if (!this.userInput.trim()) return;
+    if (!this.userInput.trim() || this.isProcessing) return;
+    this.isProcessing = true;
+    
     // Show the user message immediately
-    const userMessage: Message = { type: 'user', content: this.userInput };
+    const userMessage: Message = { 
+      type: 'user', 
+      content: this.userInput,
+      context: this.selectedContexts.length > 0 ? `Using context from: ${this.selectedContexts.map(c => this.getContextName(c)).join(', ')}` : undefined
+    };
     
     this.messages.push(userMessage);
+    this.saveMessages(); // Save after adding user message
     this.shouldScrollToBottom = true;
     
     const input = this.userInput;
@@ -121,7 +180,7 @@ export class AiPanelComponent implements OnInit, AfterViewChecked {
 
     try {
       // Build structured request and send to backend
-      const req = await this.aiService.buildStructuredRequest(input);
+      const req = await this.aiService.buildStructuredRequest(input, this.selectedContexts);
       const backendResp = await this.aiService.sendStructuredRequest(req);
       
       // Handle the response based on its structure
@@ -150,6 +209,7 @@ export class AiPanelComponent implements OnInit, AfterViewChecked {
           : `Applied ${result.appliedChangesCount} change(s) and generated ${result.generatedFilesCount} file(s).`;
         this.messages.push({ type: 'assistant', content: summaryText });
       }
+      this.saveMessages(); // Save after adding assistant message
       this.shouldScrollToBottom = true;
     } catch (error) {
       console.error('Error in sendMessage:', error);
@@ -157,7 +217,10 @@ export class AiPanelComponent implements OnInit, AfterViewChecked {
         type: 'assistant',
         content: 'Sorry, there was an error processing your request.'
       });
+      this.saveMessages(); // Save after error message
       this.shouldScrollToBottom = true;
+    } finally {
+      this.isProcessing = false;
     }
   }
 

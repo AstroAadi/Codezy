@@ -31,9 +31,8 @@
         <span class="resize-arrow" *ngIf="showResizeArrows">&#x2194;</span>
       </div>
     </div>
-    <div class="content-area">
+    <div class="content-area" [class.with-bottom-panel]="!!activeBottomPanel">
       <app-code-editor [file]="selectedFile" (codeChange)="onCodeChanged($event)"></app-code-editor>
-      <!-- Remove app-code-runner -->
       <app-bottom-panel
         [outputText]="outputText"
         [activePanel]="activeBottomPanel"

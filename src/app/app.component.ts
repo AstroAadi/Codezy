@@ -46,11 +46,15 @@ export class AppComponent implements OnInit {
   selectedFileName: string | null = null;
 
   code: string = '';
-  output: string = '';
-
+  // outputText: string = '';
+  // activeBottomPanel: PanelType | null = null;
 
   onOutputChanged(newOutput: string) {
-    this.output = newOutput;
+    this.outputText = newOutput;
+  }
+
+  onBottomPanelToggle(panel: PanelType | null) {
+    this.activeBottomPanel = panel;
   }
 
 selectedSessionMode: 'create' | 'join' | null = null;
@@ -103,6 +107,8 @@ onSessionModeSelected(mode: 'create' | 'join') {
       };
       this.fileNodes.push(newNode);
       this.selectedFile = newNode;
+      // Save the selected file path to local storage
+      localStorage.setItem('selectedFile', JSON.stringify(newNode.path));
     }
   }
 
@@ -116,6 +122,9 @@ onSessionModeSelected(mode: 'create' | 'join') {
         children: [],
       };
       this.fileNodes.push(newFolder);
+      this.selectedFile = newFolder;
+      // Save the selected file path to local storage
+      localStorage.setItem('selectedFile', JSON.stringify(newFolder.path));
     }
   }
 
@@ -140,19 +149,6 @@ onSessionModeSelected(mode: 'create' | 'join') {
         }
       }
     });
-    // Ensure 'untitled' file exists on startup
-    if (!this.fileNodes.some(f => f.name === 'untitled')) {
-      const untitledFile: FileNode = {
-        name: 'untitled',
-        type: 'file', // <-- This must be the literal 'file'
-        path: 'untitled',
-        content: '// This platform currently supports the execution of Java code only. \n//Define your class name as Main.\n//We are actively working to enable support for additional programming languages as well.',
-      };
-      this.fileNodes.push(untitledFile);
-      if (!this.selectedFile) {
-        this.selectedFile = untitledFile;
-      }
-    }
     // Subscribe to code changes from WebSocket
     this.websocketService.getCodeChanges().subscribe((changes: CodeChange[]) => {
       const latestChange = changes[changes.length - 1];
@@ -217,6 +213,7 @@ onSessionModeSelected(mode: 'create' | 'join') {
     let newWidth = this.startWidth + (event.clientX - this.startX);
     newWidth = Math.max(0, Math.min(400, newWidth)); // min 0, max 400px
     this.explorerWidth = newWidth;
+    document.documentElement.style.setProperty('--explorer-width', `${newWidth}px`);
     if (newWidth === 0) this.isExplorerOpen = false;
     else this.isExplorerOpen = true;
   };
@@ -236,7 +233,7 @@ onSessionModeSelected(mode: 'create' | 'join') {
   }
 
   outputText: string = '';
-  activeBottomPanel: PanelType | null = null;
+  activeBottomPanel: PanelType | null = null; // Start with panel closed
   selectedLanguage: string = 'python'; // Set default language
   // Change type here
   onToolbarLanguageChange(lang: string) {
@@ -262,9 +259,9 @@ onRun() {
     this.activeBottomPanel = 'output';
   }
 
-  onBottomPanelToggle(panel: PanelType | null) {
-    this.activeBottomPanel = this.activeBottomPanel === panel ? null : panel;
-  }
+  // onBottomPanelToggle(panel: PanelType | null) {
+  //   this.activeBottomPanel = this.activeBottomPanel === panel ? null : panel;
+  // }
 
   onCodeChanged(newCode: string) {
     if (this.selectedFile) {
@@ -371,19 +368,7 @@ onRun() {
   }
 
   private initializeDefaultFileNodes() {
-    // Ensure 'untitled' file exists on startup if no data loaded from local storage
-    if (!this.fileNodes.some(f => f.name === 'untitled')) {
-      const untitledFile: FileNode = {
-        name: 'untitled',
-        type: 'file',
-        path: 'untitled',
-        content: '// This is the untitled file.\n// You can observe code changes here.\n',
-      };
-      this.fileNodes.push(untitledFile);
-      if (!this.selectedFile) {
-        this.selectedFile = untitledFile;
-      }
-    }
+    // Initialize with empty file structure - no default files
   }
 
   saveUserFile() {

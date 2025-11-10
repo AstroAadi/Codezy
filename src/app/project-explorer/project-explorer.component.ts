@@ -240,10 +240,16 @@ export class ProjectExplorerComponent {
   
   deleteSelected() {
     if (!this.selectedNode) return;
+    
+    // If it's a file, remove it from localStorage
+    if (this.selectedNode.type === 'file') {
+      localStorage.removeItem(this.selectedNode.path);
+    }
+    
     this.removeNode(this.files, this.selectedNode);
     this.selectedNode = null;
     this.saveToLocalStorage();
-
+    this.collaborationService.notifyFileStructureChanged();
   }
   
   removeNode(nodes: FileNode[], target: FileNode): boolean {
@@ -261,6 +267,8 @@ export class ProjectExplorerComponent {
   }
   saveToLocalStorage() {
     localStorage.setItem('fileStructure', JSON.stringify(this.files));
-}
+    // Notify collaboration service about the change
+    this.collaborationService.notifyFileStructureChanged();
+  }
 
 }

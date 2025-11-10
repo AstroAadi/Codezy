@@ -20,8 +20,8 @@ export type PanelType = 'terminal' | 'output' | 'problems' | 'services' | 'versi
 })
 export class BottomPanelComponent {
   @Input() outputText: string = '';
-  @Input() activePanel: PanelType | null = null; // <-- Change here
-  @Output() activePanelChange = new EventEmitter<PanelType | null>(); // <-- Change here
+  @Input() activePanel: PanelType | null = null;
+  @Output() activePanelChange = new EventEmitter<PanelType | null>();
 
   bottomToolbarItems: Array<{ id: PanelType; icon: string; title: string; label: string }> = [
     { id: 'terminal', icon: 'terminal', title: 'Terminal', label: 'Terminal' },
@@ -76,7 +76,9 @@ export class BottomPanelComponent {
     document.removeEventListener('mouseup', this.stopResize);
   }
 
-  getPanelContent(panelName: PanelType): string {
+  getPanelContent(panelName: PanelType | null): string {
+    if (!panelName) return '';
+    
     switch(panelName) {
       case 'terminal':
         return 'Terminal > _';
@@ -93,10 +95,12 @@ export class BottomPanelComponent {
   @ViewChild(OutputPanelComponent) outputPanelComponent!: OutputPanelComponent;
   togglePanel(panelId: PanelType): void {
     if (this.activePanel === panelId) {
+      // Clicking the same panel again - close it
       this.panels[panelId].isOpen = false;
       this.activePanel = null;
       this.activePanelChange.emit(null);
     } else {
+      // Switching to a different panel - close others and open this one
       Object.keys(this.panels).forEach(key => {
         this.panels[key as PanelType].isOpen = false;
       });

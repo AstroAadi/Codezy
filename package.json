@@ -23,6 +23,7 @@
     "bootstrap": "^5.3.7",
     "bootstrap-icons": "^1.13.1",
     "codemirror": "^5.65.19",
+    "jszip": "^3.10.1",
     "rxjs": "^7.8.1",
     "sockjs-client": "^1.6.1",
     "sweetalert2": "^11.22.2",
