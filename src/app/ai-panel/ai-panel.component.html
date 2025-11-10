@@ -6,15 +6,12 @@
   <div class="chat-container">
     <div class="messages" #messagesContainer>
       <div *ngFor="let message of messages" class="message-row" [ngClass]="message.type">
-        <div class="avatar" [ngClass]="{'user': message.type === 'user', 'assistant': message.type === 'assistant'}">
-          <span *ngIf="message.type === 'assistant'">AI</span>
-          <span *ngIf="message.type === 'user'">You</span>
+        <div class="avatar">
+          <span>{{ message.type === 'user' ? 'You' : 'AI' }}</span>
         </div>
         <div class="bubble">
           <div class="message-content">{{ message.content }}</div>
-          <div *ngIf="message.context" class="context-info">
-            <small>{{ message.context }}</small>
-          </div>
+          <div *ngIf="message.context" class="context-info">{{ message.context }}</div>
         </div>
       </div>
       <div *ngIf="isProcessing" class="message-row assistant">
@@ -73,13 +70,14 @@
             </button>
           </div>
           <div class="picker-list">
-            <div *ngFor="let item of flatList; trackBy: trackByPath" class="picker-item" 
-                 (click)="selectAndAddContext(item.path)">
-              <div class="item-content" [style.paddingLeft.px]="item.depth * 12">
-                <i class="fas" [ngClass]="{'fa-folder': item.node.type === 'folder', 'fa-file-code': item.node.type === 'file'}"></i>
-                <span [class.folder]="item.node.type === 'folder'">{{ item.node.name }}</span>
-              </div>
-            </div>
+            <div *ngFor="let item of flatList; trackBy: trackByPath" 
+             class="picker-item" 
+             (click)="selectAndAddContext(item.path)">
+          <div class="item-content" [style.paddingLeft.px]="item.depth * 12">
+            <i class="fas" [ngClass]="item.node.type === 'folder' ? 'fa-folder' : 'fa-file-code'"></i>
+            <span [class.folder]="item.node.type === 'folder'">{{ item.node.name }}</span>
+          </div>
+        </div>
           </div>
         </div>
       </div>

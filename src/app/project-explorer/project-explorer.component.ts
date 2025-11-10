@@ -212,15 +212,79 @@ export class ProjectExplorerComponent {
   ngOnInit() {
     // Subscribe to fileAdded$ and add the file if it doesn't exist
     this.collaborationService.fileAdded$.subscribe((fileNode) => {
-      // Check if file already exists by path
+      // Check if file/folder already exists by path
       const exists = this.findFileByPath(this.files, fileNode.path);
       if (!exists) {
-        this.files.push(fileNode);
-      } else {
-        // Optionally update content if file exists
+        if (fileNode.type === 'folder') {
+          // For folders, we need to merge with existing structure
+          this.mergeNodeIntoStructure(this.files, fileNode);
+        } else {
+          // For files, check if we need to create parent folders
+          const pathParts = fileNode.path.split('/').filter(part => part.length > 0);
+          if (pathParts.length > 1) {
+            // Remove the filename from parts
+            pathParts.pop();
+            let currentPath = '';
+            let currentArray = this.files;
+            
+            // Create folder structure if it doesn't exist
+            for (const part of pathParts) {
+              currentPath = currentPath ? `${currentPath}/${part}` : part;
+              let folder = this.findFileByPath(this.files, currentPath);
+              
+              if (!folder) {
+                folder = {
+                  name: part,
+                  type: 'folder',
+                  path: currentPath,
+                  children: [],
+                  isExpanded: true
+                };
+                currentArray.push(folder);
+              }
+              
+              if (!folder.children) {
+                folder.children = [];
+              }
+              currentArray = folder.children;
+            }
+            
+            // Add the file to the last folder
+            currentArray.push(fileNode);
+          } else {
+            // Root level file
+            this.files.push(fileNode);
+          }
+        }
+        this.saveToLocalStorage();
+      } else if (fileNode.type === 'file') {
+        // Update content if it's a file
         exists.content = fileNode.content;
+        this.saveToLocalStorage();
       }
     });
+  }
+
+  private mergeNodeIntoStructure(targetArray: FileNode[], nodeToMerge: FileNode) {
+    const existingNode = targetArray.find(n => n.path === nodeToMerge.path);
+    
+    if (!existingNode) {
+      // If the node doesn't exist at this level, add it
+      targetArray.push(nodeToMerge);
+    } else {
+      // If it exists and both are folders, merge their children
+      if (existingNode.type === 'folder' && nodeToMerge.type === 'folder') {
+        existingNode.isExpanded = true;
+        if (!existingNode.children) {
+          existingNode.children = [];
+        }
+        
+        // Recursively merge children
+        nodeToMerge.children?.forEach(child => {
+          this.mergeNodeIntoStructure(existingNode.children!, child);
+        });
+      }
+    }
   }
 
   findFileByPath(nodes: FileNode[], path: string): FileNode | null {

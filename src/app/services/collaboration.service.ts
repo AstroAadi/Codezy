@@ -153,15 +153,48 @@ export class CollaborationService {
   }
 
   ensureFileExists(filePath: string, content: string) {
-    // Traverse the file tree and create the file if it doesn't exist
-    // For simplicity, emit a new FileNode for root-level files
+    // Split the path into parts
+    const parts = filePath.split('/').filter(part => part.length > 0);
+    const fileName = parts.pop() || ''; // Last part is the file name
+    
+    // Create a file node
     const fileNode: FileNode = {
-      name: filePath.split('/').pop() || filePath,
+      name: fileName,
       type: 'file',
       path: filePath,
       content
     };
-    this.fileAddedSubject.next(fileNode);
+
+    // If there are path parts, we need to create/ensure folder structure
+    if (parts.length > 0) {
+      let currentPath = '';
+      const folders: FileNode[] = parts.map(part => {
+        currentPath = currentPath ? `${currentPath}/${part}` : part;
+        return {
+          name: part,
+          type: 'folder',
+          path: currentPath,
+          children: [],
+          isExpanded: true
+        };
+      });
+
+      // Link the folders together
+      for (let i = 0; i < folders.length - 1; i++) {
+        folders[i].children = [folders[i + 1]];
+      }
+      
+      // Add the file to the last folder
+      if (folders.length > 0) {
+        folders[folders.length - 1].children = [fileNode];
+        // Emit the root folder which contains the entire structure
+        this.fileAddedSubject.next(folders[0]);
+      }
+    } else {
+      // Root-level file
+      this.fileAddedSubject.next(fileNode);
+    }
+
     this.notifyFileStructureChanged();
   }
 

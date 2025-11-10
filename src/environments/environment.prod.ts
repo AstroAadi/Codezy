@@ -4,7 +4,7 @@ export const environment = {
   // wsTerminalUrl: 'wss://codezy-backend.onrender.com/terminal',
   // wsSignalUrl: 'wss://codezy-backend.onrender.com/signal'
   apiUrl: 'http://localhost:8080',
-  apiAiUrl: 'http://34.127.59.12:8000',
+  apiAiUrl: 'https://f2e4256f986c.ngrok-free.app',
 
   wsTerminalUrl: 'ws://localhost:8080/terminal',
   wsSignalUrl: 'ws://localhost:8080/signal'

@@ -1,48 +1,38 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEventType, HttpEvent } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { SelectedFileService } from './selected-file.service';
 import { FileNode } from '../project-explorer/project-explorer.component';
-import { EditorActionsService, AiFileChangePayload, AiModification } from './editor-actions.service';
+import { EditorActionsService } from './editor-actions.service';
 import { CollaborationService } from './collaboration.service';
+import { Subject, Observable, from } from 'rxjs';
+import { map, tap, switchMap } from 'rxjs/operators';
 
-import { Subject } from 'rxjs';
+export interface AiStreamResponse {
+  type: 'chunk' | 'complete' | 'progress' | 'stream';
+  content?: string;
+  loaded?: number;
+  total?: number;
+  body?: string;
+}
 
-interface StructuredAiRequestContextFile {
+export interface AiRequestFile {
   path: string;
-  content: string;
+  name: string;
   type: 'file';
-  name: string;
+  content: string;
 }
 
-interface StructuredAiRequestContextFolder {
+export interface AiRequestFolder {
   path: string;
-  type: 'folder';
   name: string;
-  children: (StructuredAiRequestContextFile | StructuredAiRequestContextFolder)[];
+  type: 'folder';
+  children: (AiRequestFile | AiRequestFolder)[];
 }
 
-interface StructuredAiRequestContext {
-  // Currently selected files in editor
-  open_files: StructuredAiRequestContextFile[];
-  // Files selected for context in AI panel
-  context_files: StructuredAiRequestContextFile[];
-  // Full workspace structure
-  workspace_tree: {
-    root: string;
-    children: (StructuredAiRequestContextFile | StructuredAiRequestContextFolder)[];
-  };
-}
+export type AiOperation = 'replace' | 'insert' | 'delete' | 'insert_before';
 
-export interface StructuredAiRequest {
-  query: string;
-  context: StructuredAiRequestContext;
-  session_id?: string;
-}
-
-type AiOperation = 'replace' | 'insert' | 'delete' | 'insert_before';
-
-interface AiResponseCodeChangeModification {
+export interface AiModification {
   operation: AiOperation;
   start_line: number;
   end_line: number;
@@ -50,173 +40,164 @@ interface AiResponseCodeChangeModification {
   new_content?: string;
 }
 
-interface AiResponseCodeChangeItem {
+export interface AiFileChangePayload {
+  file: string;
+  modifications: AiModification[];
+}
+
+export interface AiRequest {
+  query: string;
+  contextFiles: { path: string; content: string }[];
+  workspaceTree?: any;
+  sessionId?: string;
+}
+
+export interface AiResponseCodeChangeModification {
+  operation: AiOperation;
+  start_line: number;
+  end_line: number;
+  old_content?: string;
+  new_content?: string;
+}
+
+export interface AiResponseCodeChangeItem {
   file: string;
   modifications: AiResponseCodeChangeModification[];
 }
 
-interface AiResponseCodeChanges {
+export interface AiResponseCodeChanges {
   type: 'code_changes';
   changes: AiResponseCodeChangeItem[];
   summary?: string;
 }
 
-interface AiResponseCodeGenerationItem {
+export interface AiResponseCodeGenerationItem {
   file: string;
   content: string;
 }
 
-interface AiResponseCodeGeneration {
+export interface AiResponseCodeGeneration {
   type: 'code_generation';
   changes: AiResponseCodeGenerationItem[];
   summary?: string;
 }
 
-type AiStructuredResponse = AiResponseCodeChanges | AiResponseCodeGeneration | { content: string };
-
-interface BackendResponse {
-  response: string;
-  parsed: AiStructuredResponse | null;
-  session_id: string;
-  is_code_change: boolean;
-  request_type: string;
-}
+export type AiStructuredResponse = AiResponseCodeChanges | AiResponseCodeGeneration | { content: string };
 
 @Injectable({ providedIn: 'root' })
 export class AiService {
   private fileStructureChanged = new Subject<void>();
-  private currentSessionId: string | null = null;
   private contentCache = new Map<string, { content: string; timestamp: number }>();
   private readonly CACHE_DURATION = 5000; // 5 seconds cache
   private isLoadingSubject = new Subject<boolean>();
+  private currentSessionId?: string;
 
-  fileStructureChanged$ = this.fileStructureChanged.asObservable();
-  isLoading$ = this.isLoadingSubject.asObservable();
+  public fileStructureChanged$ = this.fileStructureChanged.asObservable();
+  public isLoading$ = this.isLoadingSubject.asObservable();
 
   constructor(
     private http: HttpClient,
     private selectedFileService: SelectedFileService,
     private editorActions: EditorActionsService,
     private collaborationService: CollaborationService
-  ) {
-    // Initialize session ID if not exists
-    this.currentSessionId = localStorage.getItem('ai_session_id');
-    if (!this.currentSessionId) {
-      this.currentSessionId = this.generateSessionId();
-      localStorage.setItem('ai_session_id', this.currentSessionId);
-    }
-  }
+  ) { }
 
   // Build structured request per user's expected format
-  async buildStructuredRequest(query: string, selectedContexts: string[] = []): Promise<StructuredAiRequest> {
-    const openFiles: StructuredAiRequestContextFile[] = [];
-    const contextFiles: StructuredAiRequestContextFile[] = [];
-    
-    // Add currently selected file in editor with its content
-    const selected = this.selectedFileService.getSelectedFile();
-    if (selected && selected.type === 'file') {
-      const content = await this.readFileContent(selected.path);
-      console.log(`Adding open file: ${selected.path} (content length: ${content.length})`);
-      openFiles.push({ 
-        path: selected.path, 
-        content,
-        type: 'file',
-        name: selected.name
-      });
+  private async buildStructuredRequest(req: AiRequest): Promise<FormData> {
+    const formData = new FormData();
+
+    // Get or generate a session ID
+    if (!this.currentSessionId) {
+      this.currentSessionId = this.generateSessionId();
     }
 
-    // Add selected context files with their content
-    for (const path of selectedContexts) {
-      // Don't add duplicates
-      if (!openFiles.some(f => f.path === path) && !contextFiles.some(f => f.path === path)) {
-        const content = await this.readFileContent(path);
-        const name = path.split('/').pop() || path;
-        console.log(`Adding context file: ${path} (content length: ${content.length})`);
-        contextFiles.push({ 
-          path, 
-          content,
-          type: 'file',
-          name
-        });
-      }
-    }
+    // Get workspace tree
+    const workspaceTree = await this.getProjectTree();
 
-    // Get project tree (structure only, no content)
-    const projectTree = await this.getProjectTree();
-    const workspaceTree = await this.convertWorkspaceTree(projectTree);
-    const sessionId = this.collaborationService.getCurrentSessionId() || undefined;
-
-    // Prepare the final request with file contents in context
-    const request: StructuredAiRequest = {
-      query,
-      context: {
-        open_files: openFiles,
-        context_files: contextFiles,
-        workspace_tree: { 
-          root: '/project', 
-          children: workspaceTree // Contains only structure, no content
-        }
-      },
-      session_id: sessionId
+    // Create the request metadata with all required fields
+    const requestData: AiRequest = {
+      query: req.query,
+      contextFiles: req.contextFiles,
+      workspaceTree: workspaceTree,
+      sessionId: this.currentSessionId
     };
 
-    // Log the context being sent
-    console.group('AI Request Context');
-    console.log('Open Files:', request.context.open_files);
-    console.log('Context Files:', request.context.context_files);
-    console.log('Workspace Tree:', request.context.workspace_tree);
+    // Add required fields to FormData
+    formData.append('query', requestData.query);
+    formData.append('session_id', requestData.sessionId || 'default');
+    formData.append('model_name', ''); // Default to empty string
+
+    // Add context files
+    console.group('Context Files Debug');
+    requestData.contextFiles.forEach(file => {
+      console.log(`Adding file:`, {
+        path: file.path,
+        contentLength: file.content?.length || 0,
+        content: file.content?.substring(0, 100) + '...' // Log first 100 chars
+      });
+      // Verify content is not undefined or empty
+      if (!file.content) {
+        console.warn(`Empty or undefined content for file: ${file.path}`);
+      }
+      formData.append('files', new Blob([file.content || ''], { type: 'text/plain' }), file.path);
+    });
     console.groupEnd();
 
-    return request;
-  }
-
-  async sendStructuredRequest(req: StructuredAiRequest): Promise<AiStructuredResponse | BackendResponse> {
-    try {
-      // Set loading state to true
-      this.isLoadingSubject.next(true);
-
-      // Log the request payload
-      console.group('AI Request Payload');
-      console.log('Query:', req.query);
-      console.log('Session ID:', req.session_id);
-      console.log('Files in Context:', req.context.open_files.map(f => ({
-        path: f.path,
-        contentLength: f.content.length,
-        preview: f.content.substring(0, 100) + (f.content.length > 100 ? '...' : '')
-      })));
-      console.log('Project Tree:', req.context.workspace_tree);
-      console.groupEnd();
-
-      const response = await this.http.post<AiStructuredResponse | BackendResponse>(
-        `${environment.apiAiUrl}/chat`,
-        req
-      ).toPromise();
-      
-      if (!response) throw new Error('No response from server');
-
-      // Log the response
-      console.group('AI Response');
-      console.log('Response:', response);
-      if ('response' in response) {
-        console.log('Is Code Change:', response.is_code_change);
-        if (response.parsed) {
-          console.log('Parsed Response:', response.parsed);
-        }
-      }
-      console.groupEnd();
-
-      return response;
-    } catch (error) {
-      console.error('Error sending structured AI request:', error);
-      throw error;
-    } finally {
-      // Set loading state to false whether request succeeded or failed
-      this.isLoadingSubject.next(false);
+    // Add workspace tree if available
+    if (requestData.workspaceTree && requestData.workspaceTree.length > 0) {
+      formData.append('workspace_tree', JSON.stringify({
+        root: '/',
+        children: requestData.workspaceTree
+      }));
     }
+
+    return formData;
   }
 
-  async applyResponse(resp: AiStructuredResponse): Promise<{ appliedChangesCount: number; generatedFilesCount: number; summary?: string }>
-  {
+  generateCode(req: AiRequest): Observable<AiStreamResponse> {
+    this.isLoadingSubject.next(true);
+
+    return from(this.buildStructuredRequest(req)).pipe(
+      switchMap(formData => this.http.post(`${environment.apiAiUrl}/chat`, formData, {
+        reportProgress: true,
+        observe: 'events',
+        responseType: 'text'
+      })),
+      map((event: HttpEvent<string>): AiStreamResponse => {
+        switch (event.type) {
+          case HttpEventType.UploadProgress:
+            return {
+              type: 'progress',
+              loaded: event.loaded,
+              total: event.total
+            } as AiStreamResponse;
+          case HttpEventType.DownloadProgress:
+            if ('partialText' in event) {
+              return {
+                type: 'stream',
+                content: (event as any).partialText
+              } as AiStreamResponse;
+            }
+            break;
+          case HttpEventType.Response:
+            return {
+              type: 'complete',
+              body: event.body || ''
+            } as AiStreamResponse;
+        }
+        return { type: 'chunk', content: '' } as AiStreamResponse;
+      }),
+      tap({
+        error: (error) => {
+          console.error('Error in generateCode:', error);
+          this.isLoadingSubject.next(false);
+        },
+        complete: () => this.isLoadingSubject.next(false)
+      })
+    );
+  }
+  public async applyResponse(resp: AiStructuredResponse): Promise<{ appliedChangesCount: number; generatedFilesCount: number; summary?: string }> {
+
     console.group('Processing AI Response');
     console.log('Raw Response:', resp);
 
@@ -416,10 +397,16 @@ export class AiService {
 
   private async readFileContent(filePath: string): Promise<string> {
     try {
+      console.group(`Reading file content: ${filePath}`);
+      
       // Check cache first
       const cached = this.contentCache.get(filePath);
       if (cached && (Date.now() - cached.timestamp) < this.CACHE_DURATION) {
-        console.log(`Using cached content for ${filePath}`);
+        console.log(`Using cached content for ${filePath}`, {
+          contentLength: cached.content.length,
+          preview: cached.content.substring(0, 100) + '...'
+        });
+        console.groupEnd();
         return cached.content;
       }
 
@@ -456,18 +443,30 @@ export class AiService {
       }
 
       if (content !== null) {
+        console.log('Found content from source:', {
+          contentLength: content.length,
+          preview: content.substring(0, 100) + '...'
+        });
         // Cache the found content
         this.contentCache.set(filePath, {
           content,
           timestamp: Date.now()
         });
+        console.groupEnd();
         return content;
       }
 
       console.warn(`No content found for file: ${filePath}`);
+      console.log('Checked sources:', {
+        editor: Boolean(this.selectedFileService.getSelectedFile()),
+        fileStructure: Boolean(localStorage.getItem('fileStructure')),
+        workspaceFiles: Boolean(localStorage.getItem('workspace_files'))
+      });
+      console.groupEnd();
       return 'No content available for this file';
     } catch (err) {
       console.error('readFileContent error for file:', filePath, err);
+      console.groupEnd();
       return `Error reading content for ${filePath}`;
     }
   }
@@ -539,9 +538,9 @@ export class AiService {
     return this.readFileContent(path);
   }
 
-  private async convertWorkspaceTree(nodes: FileNode[]): Promise<(StructuredAiRequestContextFile | StructuredAiRequestContextFolder)[]> {
-    const result: (StructuredAiRequestContextFile | StructuredAiRequestContextFolder)[] = [];
-    
+  private async convertWorkspaceTree(nodes: FileNode[]): Promise<(AiRequestFile | AiRequestFolder)[]> {
+    const result: (AiRequestFile | AiRequestFolder)[] = [];
+
     for (const node of nodes) {
       if (node.type === 'file') {
         // Only include structural information, not content
@@ -562,7 +561,7 @@ export class AiService {
         });
       }
     }
-    
+
     return result;
   }
 

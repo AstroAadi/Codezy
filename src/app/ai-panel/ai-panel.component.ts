@@ -1,7 +1,14 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewChecked, OnDestroy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ViewChild,
+  ElementRef,
+  AfterViewChecked,
+  OnDestroy
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AiService } from '../services/ai.service';
+import { AiService, AiStreamResponse } from '../services/ai.service';
 import { FileNode } from '../project-explorer/project-explorer.component';
 import { Subscription } from 'rxjs';
 
@@ -9,14 +16,34 @@ interface Message {
   type: 'user' | 'assistant';
   content: string;
   context?: string;
+  metadata?: {
+    appliedChanges?: number;
+    generatedFiles?: number;
+    usage?: {
+      input_tokens: number;
+      output_tokens: number;
+      cache_creation_input_tokens: number;
+      cache_read_input_tokens: number;
+    };
+  };
 }
 
 interface BackendResponse {
-  response: string;
-  parsed: any;
+  type: string;
+  parsed?: {
+    type: 'code_generation' | 'code_changes';
+    changes: any[];
+    summary?: string;
+  };
   session_id: string;
   is_code_change: boolean;
   request_type: string;
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+    cache_creation_input_tokens: number;
+    cache_read_input_tokens: number;
+  };
 }
 
 @Component({
@@ -28,69 +55,66 @@ interface BackendResponse {
 })
 export class AiPanelComponent implements OnInit, AfterViewChecked, OnDestroy {
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
-  
+
+  // UI State
   messages: Message[] = [];
   userInput = '';
   selectedModel = 'claude sonnet 4.5';
-  selectedContext: string | null = null;
-  selectedContexts: string[] = [];
   isProcessing = false;
-
-  private subscription: Subscription | undefined;
-  private loadingSubscription: Subscription | undefined;
-
-  showContextPicker = false;
-  projectTree: FileNode[] = [];
-  flatList: Array<{ node: FileNode; depth: number; path: string }> = [];
-  selectedContextItems = new Set<string>();
-  
   private shouldScrollToBottom = false;
 
-  constructor(private aiService: AiService ) {}
+  // Context management
+  selectedContexts: string[] = [];
+  selectedContextItems = new Set<string>();
+  showContextPicker = false;
 
-  async ngOnInit() {
-    // Load saved messages from localStorage
+  // Project structure
+  projectTree: FileNode[] = [];
+  flatList: Array<{ node: FileNode; depth: number; path: string }> = [];
+
+  // Subscriptions
+  private subscription?: Subscription;
+  private loadingSubscription?: Subscription;
+
+  constructor(private aiService: AiService) {}
+
+  ngOnInit(): void {
     this.loadSavedMessages();
-    await this.loadProjectTree();
-    
+    this.loadProjectTree();
+
     // Subscribe to file structure changes
     this.subscription = this.aiService.fileStructureChanged$.subscribe(() => {
       this.loadProjectTree();
     });
 
-    // Subscribe to loading state changes
-    this.loadingSubscription = this.aiService.isLoading$.subscribe(
-      isLoading => {
-        this.isProcessing = isLoading;
-        if (isLoading) {
-          this.shouldScrollToBottom = true;
-        }
+    // Subscribe to loading state
+    this.loadingSubscription = this.aiService.isLoading$.subscribe(isLoading => {
+      this.isProcessing = isLoading;
+      if (isLoading) {
+        this.shouldScrollToBottom = true;
       }
-    );
+    });
   }
-  
-  ngAfterViewChecked() {
+
+  ngAfterViewChecked(): void {
     if (this.shouldScrollToBottom) {
       this.scrollToBottom();
       this.shouldScrollToBottom = false;
     }
   }
 
-  ngOnDestroy() {
-    if (this.subscription) {
-      this.subscription.unsubscribe();
-    }
-    if (this.loadingSubscription) {
-      this.loadingSubscription.unsubscribe();
-    }
+  ngOnDestroy(): void {
+    this.subscription?.unsubscribe();
+    this.loadingSubscription?.unsubscribe();
     this.saveMessages();
   }
 
-  private loadSavedMessages() {
-    const savedMessages = localStorage.getItem('ai_panel_messages');
-    if (savedMessages) {
+  // LocalStorage handling
+  private loadSavedMessages(): void {
+    const saved = localStorage.getItem('ai_panel_messages');
+    if (saved) {
       try {
-        this.messages = JSON.parse(savedMessages);
+        this.messages = JSON.parse(saved);
         this.shouldScrollToBottom = true;
       } catch (err) {
         console.error('Error loading saved messages:', err);
@@ -98,182 +122,286 @@ export class AiPanelComponent implements OnInit, AfterViewChecked, OnDestroy {
     }
   }
 
-  private saveMessages() {
+  private saveMessages(): void {
     try {
       localStorage.setItem('ai_panel_messages', JSON.stringify(this.messages));
     } catch (err) {
       console.error('Error saving messages:', err);
     }
   }
-  
+
+  // Scroll to bottom
   private scrollToBottom(): void {
     try {
-      this.messagesContainer.nativeElement.scrollTop = this.messagesContainer.nativeElement.scrollHeight;
-    } catch (err) { 
+      const el = this.messagesContainer.nativeElement;
+      el.scrollTop = el.scrollHeight;
+    } catch (err) {
       console.error('Error scrolling to bottom:', err);
     }
   }
 
-  async loadProjectTree() {
+  // Project tree loading and flattening
+  async loadProjectTree(): Promise<void> {
     this.projectTree = await this.aiService.getProjectTree();
     this.flatList = [];
     this.flattenTree(this.projectTree, 0, '');
   }
 
-  flattenTree(nodes: FileNode[], depth: number, parentPath: string) {
-    for (const n of nodes) {
-      const path = parentPath ? `${parentPath}/${n.name}` : n.path || n.name;
-      this.flatList.push({ node: n, depth, path });
-      if (n.type === 'folder' && n.children) {
-        this.flattenTree(n.children, depth + 1, path);
+  private flattenTree(nodes: FileNode[], depth: number, parentPath: string): void {
+    for (const node of nodes) {
+      const path = parentPath ? `${parentPath}/${node.name}` : node.path || node.name;
+      this.flatList.push({ node, depth, path });
+
+      if (node.type === 'folder' && node.children) {
+        this.flattenTree(node.children, depth + 1, path);
       }
     }
   }
 
-  trackByPath(_: number, item: {node: FileNode; depth:number; path:string}) { return item.path; }
+  trackByPath(index: number, item: { path: string }): string {
+    return item.path;
+  }
 
-  toggleContextPicker() {
+  // Context picker
+  toggleContextPicker(): void {
     this.showContextPicker = !this.showContextPicker;
     if (this.showContextPicker && this.flatList.length === 0) {
       this.loadProjectTree();
     }
   }
 
-  closeContextPicker() { this.showContextPicker = false; }
-
-  toggleSelect(path: string) {
-    if (this.selectedContextItems.has(path)) this.selectedContextItems.delete(path);
-    else this.selectedContextItems.add(path);
+  closeContextPicker(): void {
+    this.showContextPicker = false;
   }
 
-  shortContextLabel(ctx: string) {
-    return ctx.length > 80 ? ctx.slice(0,80) + '...' : ctx;
+  toggleSelect(path: string): void {
+    if (this.selectedContextItems.has(path)) {
+      this.selectedContextItems.delete(path);
+    } else {
+      this.selectedContextItems.add(path);
+    }
   }
 
-  async sendMessage() {
+  shortContextLabel(ctx: string): string {
+    return ctx.length > 80 ? ctx.slice(0, 80) + '...' : ctx;
+  }
+
+  // Send message with streaming
+  async sendMessage(): Promise<void> {
     if (!this.userInput.trim() || this.isProcessing) return;
-    this.isProcessing = true;
-    
-    // Show the user message immediately
-    const userMessage: Message = { 
-      type: 'user', 
+
+    console.group('AI Request');
+    console.log('Starting new request...');
+
+    const contextFiles = await Promise.all(
+      this.selectedContexts.map(async (path) => {
+        const content = await this.aiService.fetchFileContent(path);
+        console.log(`Context file loaded: ${path}, content length: ${content.length}`);
+        return { path, content };
+      }));
+
+    const userMessage: Message = {
+      type: 'user',
       content: this.userInput,
-      context: this.selectedContexts.length > 0 ? `Using context from: ${this.selectedContexts.map(c => this.getContextName(c)).join(', ')}` : undefined
+      context: contextFiles.length > 0
+        ? `Using context from: ${contextFiles.map(c => this.getContextName(c.path)).join(', ')}`
+        : undefined
     };
-    
+
     this.messages.push(userMessage);
-    this.saveMessages(); // Save after adding user message
+    this.saveMessages();
     this.shouldScrollToBottom = true;
-    
+
     const input = this.userInput;
     this.userInput = '';
-    this.selectedContext = null;
-    
-    // Clear contexts after sending message
     this.selectedContexts = [];
-    
-    // Reset textarea height to default
+    this.selectedContextItems.clear();
+
+    // Reset textarea height
     const textarea = document.querySelector('textarea');
     if (textarea) {
       textarea.style.height = 'auto';
     }
 
-    try {
-      // Build structured request and send to backend
-      const req = await this.aiService.buildStructuredRequest(input, this.selectedContexts);
-      const backendResp = await this.aiService.sendStructuredRequest(req);
-      
-      // Handle the response based on its structure
-      if ('response' in backendResp) {
-        // New backend response format
-        const responseData = backendResp as unknown as BackendResponse;
+    // Assistant message placeholder
+    const assistantMessage: Message = { type: 'assistant', content: '' };
+    this.messages.push(assistantMessage);
 
-        if (responseData.is_code_change && responseData.parsed) {
-          // Apply the code changes/generation if present
-          const result = await this.aiService.applyResponse(responseData.parsed);
-          // Show both the AI's message and the changes summary
-          this.messages.push({ type: 'assistant', content: responseData.response });
-          if (result.appliedChangesCount > 0 || result.generatedFilesCount > 0) {
-            const changesSummary = `\n\nChanges applied: ${result.appliedChangesCount} change(s) and ${result.generatedFilesCount} file(s) generated.`;
-            this.messages.push({ type: 'assistant', content: changesSummary });
-          }
-        } else {
-          // Just show the text response if no code changes
-          this.messages.push({ type: 'assistant', content: responseData.response });
+    // Log the request structure
+    const aiRequest = {
+      query: input,
+      contextFiles: contextFiles,
+      workspaceTree: undefined,
+      sessionId: undefined
+    };
+    
+    console.group('AI Request Details');
+    console.log('Full Request:', aiRequest);
+    console.log('Query:', aiRequest.query);
+    console.log('Context Files:', aiRequest.contextFiles.map(cf => ({
+      path: cf.path,
+      contentLength: cf.content.length
+    })));
+    console.groupEnd();
+
+    // Stream response
+    this.aiService.generateCode(aiRequest).subscribe({
+      next: (event) => {
+        console.group('AI Response Event');
+        console.log('Event type:', event.type);
+        console.log('Full event:', event);
+
+        switch (event.type) {
+          case 'progress':
+            console.log(`Upload progress: ${event.loaded}/${event.total}`);
+            break;
+
+          case 'stream':
+            if (event.content) {
+              console.log('Stream content received:', event.content);
+              try {
+                const parsedContent = JSON.parse(event.content);
+                console.log('Parsed stream content:', parsedContent);
+                
+                if (parsedContent.parsed?.summary) {
+                  console.log('Found summary:', parsedContent.parsed.summary);
+                  assistantMessage.content = parsedContent.parsed.summary;
+                } else if (parsedContent.error) {
+                  console.error('Error in response:', parsedContent.error);
+                  assistantMessage.content = `Error: ${parsedContent.error}`;
+                }
+              } catch (error) {
+                console.log('Raw content (not JSON):', event.content);
+                assistantMessage.content += event.content;
+              }
+              this.shouldScrollToBottom = true;
+              this.saveMessages();
+            }
+            break;
+
+          case 'complete':
+            console.group('Complete Response');
+            if (event.body) {
+              console.log('Raw response body:', event.body);
+              try {
+                const response = JSON.parse(event.body);
+                console.log('Parsed complete response:', response);
+
+                if (response.error) {
+                  console.error('Error in complete response:', response.error);
+                  assistantMessage.content = `Error: ${response.error}`;
+                } else if (response.parsed?.summary) {
+                  console.log('Found summary in complete response:', response.parsed.summary);
+                  assistantMessage.content = response.parsed.summary;
+
+                  // Process code changes internally
+                  if (response.parsed.type === 'code_generation' || response.parsed.type === 'code_changes') {
+                    console.log('Processing code changes/generation:', response.parsed);
+                    this.aiService.applyResponse(response.parsed).then(result => {
+                      console.log('Apply response result:', result);
+                      if (result.appliedChangesCount > 0) {
+                        assistantMessage.content += `\n\nApplied ${result.appliedChangesCount} code changes.`;
+                      }
+                      if (result.generatedFilesCount > 0) {
+                        assistantMessage.content += `\n\nGenerated ${result.generatedFilesCount} new files.`;
+                      }
+                      
+                      // Add usage information if available
+                      if (response.usage) {
+                        console.log('Usage stats:', response.usage);
+                        assistantMessage.metadata = {
+                          ...assistantMessage.metadata,
+                          usage: response.usage
+                        };
+                      }
+                      
+                      this.saveMessages();
+                    }).catch(error => {
+                      console.error('Error applying changes:', error);
+                      assistantMessage.content += `\n\nError applying changes: ${error.message}`;
+                      this.saveMessages();
+                    });
+                  }
+                }
+              } catch (error) {
+                console.error('Error parsing complete response:', error);
+                // Only show the body if it's a valid message
+                if (typeof event.body === 'string' && event.body.trim()) {
+                  assistantMessage.content = event.body;
+                }
+              }
+            }
+            console.groupEnd(); // Complete Response
+            this.isProcessing = false;
+            this.saveMessages();
+            break;
         }
-      } else {
-        // Legacy format - handle as before
-        const result = await this.aiService.applyResponse(backendResp);
-        const summaryText = result.summary
-          ? result.summary
-          : `Applied ${result.appliedChangesCount} change(s) and generated ${result.generatedFilesCount} file(s).`;
-        this.messages.push({ type: 'assistant', content: summaryText });
+        console.groupEnd(); // AI Response Event
+      },
+      error: (error) => {
+        console.group('AI Response Error');
+        console.error('Full error:', error);
+        console.groupEnd();
+        
+        assistantMessage.content += '\n\nSorry, there was an error processing your request.';
+        this.isProcessing = false;
+        this.saveMessages();
+        this.shouldScrollToBottom = true;
+      },
+      complete: () => {
+        console.log('Request completed');
+        console.groupEnd(); // AI Request
+        this.isProcessing = false;
+        this.saveMessages();
       }
-      this.saveMessages(); // Save after adding assistant message
-      this.shouldScrollToBottom = true;
-    } catch (error) {
-      console.error('Error in sendMessage:', error);
-      this.messages.push({
-        type: 'assistant',
-        content: 'Sorry, there was an error processing your request.'
-      });
-      this.saveMessages(); // Save after error message
-      this.shouldScrollToBottom = true;
-    } finally {
-      this.isProcessing = false;
+    });
+  }
+
+  // Context helpers
+  async addFileContext(): Promise<void> {
+    const context = await this.aiService.getFileContext();
+    if (context && !this.selectedContexts.includes(context)) {
+      this.selectedContexts.push(context);
     }
   }
 
-  async addFileContext() {
-    // preserve legacy behavior: get currently selected file from SelectedFileService
-    const context = await this.aiService.getFileContext();
-    if (context) this.selectedContext = context;
-  }
-
-  async addFolderContext() {
-    // preserve legacy behavior
+  async addFolderContext(): Promise<void> {
     const context = await this.aiService.getFolderContext();
-    if (context) this.selectedContext = context;
+    if (context && !this.selectedContexts.includes(context)) {
+      this.selectedContexts.push(context);
+    }
   }
 
-  // Clear the selected contexts
   clearContext(): void {
     this.selectedContexts = [];
+    this.selectedContextItems.clear();
   }
 
-  // Select and add context directly when an item is clicked
-  async selectAndAddContext(path: string) {
+  async selectAndAddContext(path: string): Promise<void> {
     const node = this.findNodeInFlatList(path);
     if (!node) return;
-    
-    this.addContextFromNode(node, path);
+    await this.addContextFromNode(node, path);
   }
-  
-  async addContextFromNode(node: FileNode, path: string) {
-    if (node.type === 'file') {
-      if (!this.selectedContexts.includes(path)) {
-        this.selectedContexts.push(path);
-      }
-    } else {
-      if (!this.selectedContexts.includes(path)) {
-        this.selectedContexts.push(path);
-      }
+
+  async addContextFromNode(node: FileNode, path: string): Promise<void> {
+    if (!this.selectedContexts.includes(path)) {
+      this.selectedContexts.push(path);
     }
-    
     this.closeContextPicker();
   }
-  
-  removeContext(context: string) {
+
+  removeContext(context: string): void {
     this.selectedContexts = this.selectedContexts.filter(ctx => ctx !== context);
+    this.selectedContextItems.delete(context);
   }
 
   isFolder(path: string): boolean {
-    const item = this.flatList.find(item => item.path === path);
-    return item ? item.node.type === 'folder' : false;
+    const item = this.flatList.find(i => i.path === path);
+    return item?.node.type === 'folder';
   }
 
   getContextName(path: string): string {
-    const item = this.flatList.find(item => item.path === path);
+    const item = this.flatList.find(i => i.path === path);
     return item ? item.node.name : path.split('/').pop() || path;
   }
 
@@ -282,28 +410,32 @@ export class AiPanelComponent implements OnInit, AfterViewChecked, OnDestroy {
     return found ? found.node : null;
   }
 
-  // Simple stringify for a node subtree
+  // Utility: stringify node (for debugging or context)
   stringifyNode(node: FileNode, depth = 0): string {
-    const pad = (d:number) => '  '.repeat(d);
-    let out = `${pad(depth)}- ${node.name} (${node.type})\n`;
+    const pad = ' '.repeat(depth * 2);
+    let out = `${pad}- ${node.name} (${node.type})\n`;
+
     if (node.type === 'folder' && node.children) {
-      for (const c of node.children) out += this.stringifyNode(c, depth + 1);
+      for (const child of node.children) {
+        out += this.stringifyNode(child, depth + 1);
+      }
     } else if (node.type === 'file') {
-      out += `${pad(depth+1)}Content: ${node.content ? '\n' + node.content : 'No content available'}\n`;
+      out += `${pad}  Content: ${node.content ? '\n' + node.content : 'No content'}\n`;
     }
     return out;
   }
 
-  handleKeydown(event: KeyboardEvent) {
+  // Input handlers
+  handleKeydown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       this.sendMessage();
     }
   }
-  
-  autoResizeTextarea(event: any) {
-    const textarea = event.target;
+
+  autoResizeTextarea(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
     textarea.style.height = 'auto';
-    textarea.style.height = textarea.scrollHeight + 'px';
+    textarea.style.height = `${textarea.scrollHeight}px`;
   }
 }
