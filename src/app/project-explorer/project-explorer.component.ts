@@ -21,7 +21,7 @@ export interface FileNode {
     selector: 'app-project-explorer',
     imports: [CommonModule, FormsModule],
     templateUrl: './project-explorer.component.html',
-    styleUrl: './project-explorer.component.css'
+    styleUrls: ['./project-explorer.component.css']
 })
 export class ProjectExplorerComponent {
   canShowAddButtons(node: FileNode): boolean {
@@ -60,6 +60,7 @@ export class ProjectExplorerComponent {
   @Output() addFolder = new EventEmitter<FileNode>();
   @Input() sidebarWidth: number = 220;
   @Output() sidebarWidthChange = new EventEmitter<number>();
+  @Output() folderSelected = new EventEmitter<FileNode>();
 
   isResizing = false;
   showResizeArrows = false;
@@ -83,6 +84,7 @@ export class ProjectExplorerComponent {
     if (folder.type === 'folder') {
       folder.isExpanded = !folder.isExpanded;
       this.selectedNode = folder;
+      this.folderSelected.emit(folder); // Emit folder selection
     }
   }
 
@@ -141,7 +143,10 @@ export class ProjectExplorerComponent {
     }
 
     node.isEditingName = false;
-    node.path = node.name;
+    // Build correct path using parent path when available
+    node.path = actualParent && actualParent.path
+      ? `${actualParent.path}/${node.name}`
+      : node.name;
     if (node.type === 'file') {
       node.content = '';
       // Remove this line if handled elsewhere
@@ -210,58 +215,18 @@ export class ProjectExplorerComponent {
   }
 
   ngOnInit() {
-    // Subscribe to fileAdded$ and add the file if it doesn't exist
-    this.collaborationService.fileAdded$.subscribe((fileNode) => {
-      // Check if file/folder already exists by path
-      const exists = this.findFileByPath(this.files, fileNode.path);
-      if (!exists) {
-        if (fileNode.type === 'folder') {
-          // For folders, we need to merge with existing structure
-          this.mergeNodeIntoStructure(this.files, fileNode);
-        } else {
-          // For files, check if we need to create parent folders
-          const pathParts = fileNode.path.split('/').filter(part => part.length > 0);
-          if (pathParts.length > 1) {
-            // Remove the filename from parts
-            pathParts.pop();
-            let currentPath = '';
-            let currentArray = this.files;
-            
-            // Create folder structure if it doesn't exist
-            for (const part of pathParts) {
-              currentPath = currentPath ? `${currentPath}/${part}` : part;
-              let folder = this.findFileByPath(this.files, currentPath);
-              
-              if (!folder) {
-                folder = {
-                  name: part,
-                  type: 'folder',
-                  path: currentPath,
-                  children: [],
-                  isExpanded: true
-                };
-                currentArray.push(folder);
-              }
-              
-              if (!folder.children) {
-                folder.children = [];
-              }
-              currentArray = folder.children;
-            }
-            
-            // Add the file to the last folder
-            currentArray.push(fileNode);
-          } else {
-            // Root level file
-            this.files.push(fileNode);
-          }
-        }
-        this.saveToLocalStorage();
-      } else if (fileNode.type === 'file') {
-        // Update content if it's a file
-        exists.content = fileNode.content;
-        this.saveToLocalStorage();
-      }
+    // Seed the explorer from localStorage so it mirrors the context picker
+    this.reloadFromLocalStorage();
+
+    // Keep explorer in sync when any part of the app reports structure changes
+    this.collaborationService.fileStructureChanged$.subscribe(() => {
+      this.reloadFromLocalStorage();
+    });
+
+    // Subscribe to fileAdded$ and simply reload from localStorage
+    // This keeps the explorer in lock-step with the context picker
+    this.collaborationService.fileAdded$.subscribe(() => {
+      this.reloadFromLocalStorage();
     });
   }
 
@@ -333,6 +298,16 @@ export class ProjectExplorerComponent {
     localStorage.setItem('fileStructure', JSON.stringify(this.files));
     // Notify collaboration service about the change
     this.collaborationService.notifyFileStructureChanged();
+  }
+
+  private reloadFromLocalStorage() {
+    try {
+      const raw = localStorage.getItem('fileStructure');
+      this.files = raw ? JSON.parse(raw) : [];
+    } catch (err) {
+      console.error('Failed to reload file structure from localStorage', err);
+      this.files = [];
+    }
   }
 
 }

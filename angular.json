@@ -55,6 +55,7 @@
               "node_modules/codemirror/addon/fold/foldgutter.css",
               "node_modules/codemirror/addon/lint/lint.css",
               "node_modules/codemirror/addon/hint/show-hint.css",
+              "node_modules/xterm/css/xterm.css",
               "src/global_styles.css"
             ],
             "index": "src/index.html",

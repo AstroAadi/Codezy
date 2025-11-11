@@ -4,6 +4,7 @@ import { OutputPanelComponent } from '../output-panel/output-panel.component';
 import { Output, EventEmitter } from '@angular/core';
 import { ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TerminalPanelComponent } from '../terminal-panel/terminal-panel.component';
 
 interface PanelState {
   isOpen: boolean;
@@ -14,13 +15,15 @@ export type PanelType = 'terminal' | 'output' | 'problems' | 'services' | 'versi
 
 @Component({
     selector: 'app-bottom-panel',
-    imports: [CommonModule, OutputPanelComponent, FormsModule],
+    imports: [CommonModule, OutputPanelComponent, FormsModule, TerminalPanelComponent],
     templateUrl: './bottom-panel.component.html',
     styleUrls: ['./bottom-panel.component.css']
 })
 export class BottomPanelComponent {
   @Input() outputText: string = '';
   @Input() activePanel: PanelType | null = null;
+  @Input() projectPath: string | undefined;
+  @Input() projectFiles: any[] | undefined;
   @Output() activePanelChange = new EventEmitter<PanelType | null>();
 
   bottomToolbarItems: Array<{ id: PanelType; icon: string; title: string; label: string }> = [

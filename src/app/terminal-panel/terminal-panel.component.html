@@ -1,0 +1,46 @@
+<div class="terminal-panel-root">
+  <div class="terminal-tabs">
+    <div class="tabs-left">
+      <button *ngFor="let t of terminals; let i = index" class="tab" [class.active]="i === activeTerminalIndex" (click)="switchToTerminal(i)">
+        <span class="tab-name">{{t.name}}</span>
+        <span class="close" (click)="closeTerminal(i); $event.stopPropagation()">×</span>
+      </button>
+      <button class="tab add-tab" (click)="createNewTerminal()" [disabled]="!connectionReady" title="New Terminal">
+        <span>+</span>
+      </button>
+    </div>
+    <div class="tabs-right">
+      <div class="status-indicator" [class.connected]="connectionReady" [class.disconnected]="!connectionReady">
+        <span class="dot"></span>
+        {{ connectionReady ? 'Connected' : 'Connecting...' }}
+      </div>
+      <span class="cwd-display" *ngIf="terminals.length" title="Current Working Directory">
+        📁 {{ terminals[activeTerminalIndex]?.cwd || '/' }}
+      </span>
+      <select 
+        [(ngModel)]="terminals[activeTerminalIndex].mode" 
+        *ngIf="terminals.length" 
+        class="mode-selector" 
+        (ngModelChange)="onModeChange()"
+        title="Shell mode selector">
+        <option value="bash">Bash (PTY)</option>
+        <option value="prompt">Prompt</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="terminal-container">
+    <div #terminal class="xterm"></div>
+  </div>
+
+  <div class="terminal-input" *ngIf="terminals[activeTerminalIndex]?.mode === 'prompt'">
+    <span class="prompt-cwd">{{ terminals[activeTerminalIndex]?.cwd || '/' }} $</span>
+    <input type="text" 
+           [(ngModel)]="promptCommand" 
+           (keydown.enter)="onPromptSubmit()" 
+           placeholder="Type command here..." 
+           class="prompt-input"
+           autocomplete="off"
+           spellcheck="false" />
+  </div>
+</div>

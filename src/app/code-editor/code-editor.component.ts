@@ -404,17 +404,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private getEditorMode(filename: string): string {
-    const ext = filename.split('.').pop()?.toLowerCase() || '';
-    switch (ext) {
-      case 'py': return 'python';
-      case 'java': return 'text/x-java';
-      case 'c': return 'text/x-csrc';
-      case 'cpp': case 'h': case 'hpp': return 'text/x-c++src';
-      case 'js': return 'javascript';
-      case 'html': return 'xml';
-      case 'css': return 'css';
-      default: return 'javascript';
-    }
+    return 'javascript'; // Default to javascript, but backend ignores this now
   }
 
   private loadCodeForFile() {

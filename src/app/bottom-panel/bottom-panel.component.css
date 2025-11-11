@@ -2,13 +2,12 @@
     display: none; /* Hidden by default */
     flex-direction: column;
     background-color: #2b2b2b;
-    height: calc(100% - 48px); /* Full height minus toolbar */
+    height: 100%;
+    width: 100%;
     min-height: 0;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+    flex: 1;
     border-top: 1px solid #404040;
+    overflow: hidden;
   }
 
   .bottom-panel-container.show {
@@ -16,7 +15,8 @@
   }
 
   :host {
-    display: block;
+    display: flex;
+    flex-direction: column;
     height: 348px; /* Fixed total height including toolbar */
     position: absolute;
     bottom: 0;
@@ -24,17 +24,41 @@
     right: 0;
     background-color: #2b2b2b;
     z-index: 1000;
+    width: 100%;
+    min-height: 0;
   }
 
   .panel-content {
     flex: 1;
-    overflow: auto;
-    padding: 8px;
+    overflow: hidden;
+    padding: 0;
+    width: 100%;
+    min-height: 0;
   }
 
   .output-wrapper {
     height: 100%;
+    width: 100%;
+    display: flex;
+    min-height: 0;
   }
+
+  .terminal-wrapper {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  app-terminal-panel {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
 
   .panel-resize-bar {
     position: absolute;
@@ -58,25 +82,6 @@
     color: #666;
     font-size: 14px;
     pointer-events: none;
-  }
-  
-  .panel-content {
-    flex: 1;
-    overflow: auto;
-    background-color: #2b2b2b;
-    margin-top: 6px;
-  }
-
-  .output-wrapper {
-    height: 100%;
-    width: 100%;
-    overflow: auto;
-  }
-
-  app-output-panel {
-    height: 100%;
-    width: 100%;
-    display: block;
   }
   
   .content-wrapper {

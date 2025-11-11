@@ -329,6 +329,8 @@ export class AiService {
       localStorage.setItem('fileStructure', JSON.stringify(tree));
       // Notify about structure change
       this.notifyFileStructureChanged();
+      // Also notify the collaboration service so components relying on it can refresh
+      this.collaborationService.notifyFileStructureChanged();
     } catch (err) {
       console.error('Error applying code generation', err);
     }

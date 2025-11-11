@@ -18,8 +18,9 @@
         #projectExplorer
         [files]="fileNodes"
         (fileSelected)="onSidebarFileSelected($event)"
-        (addFile)="onAddFile($event)"
-        (addFolder)="onAddFolder($event)">
+        (folderSelected)="onSidebarFolderSelected($event)"
+        [sidebarWidth]="explorerWidth"
+        (sidebarWidthChange)="explorerWidth = $event">
       </app-project-explorer>
       <div
         class="sidebar-resize-bar"
@@ -36,6 +37,8 @@
       <app-bottom-panel
         [outputText]="outputText"
         [activePanel]="activeBottomPanel"
+        [projectPath]="selectedFolder?.path"
+        [projectFiles]="fileNodes"
         (activePanelChange)="onBottomPanelToggle($event)">
       </app-bottom-panel>
     </div>

@@ -3,11 +3,14 @@
     <span class="resize-arrow">⋮</span>
   </div>
   <div class="panel-content">
-    <div class="content-wrapper" *ngIf="activePanel !== 'output'">
+    <div class="content-wrapper" *ngIf="activePanel !== 'output' && activePanel !== 'terminal'">
       {{ getPanelContent(activePanel) }}
     </div>
     <div *ngIf="activePanel === 'output'" class="output-wrapper">
       <app-output-panel></app-output-panel>
+    </div>
+    <div *ngIf="activePanel === 'terminal'" class="terminal-wrapper">
+      <app-terminal-panel [projectPath]="projectPath" [projectFiles]="projectFiles"></app-terminal-panel>
     </div>
   </div>
 </div>

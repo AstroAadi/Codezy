@@ -38,6 +38,9 @@ export class WebsocketService {
   private client: Client;
   private messageSubject = new Subject<any>();
   public message$ = this.messageSubject.asObservable();
+  private terminalSubscriptions: Map<string, any> = new Map();
+  private pendingTerminalOps: Array<() => void> = [];
+  private isConnecting = false;
 
   constructor() {
     this.client = new Client({
@@ -47,6 +50,41 @@ export class WebsocketService {
       }
     });
     console.log('[WebsocketService] Constructor initialized');
+  }
+
+  /**
+   * Ensure STOMP client is activated. Call this before any terminal operations.
+   */
+  ensureConnected(): Promise<void> {
+    return new Promise((resolve) => {
+      if (this.client && this.client.connected) {
+        console.log('[WebsocketService] Already connected');
+        resolve();
+        return;
+      }
+      if (this.isConnecting) {
+        // Already trying to connect, queue this operation
+        this.pendingTerminalOps.push(() => resolve());
+        return;
+      }
+      this.isConnecting = true;
+      console.log('[WebsocketService] Activating STOMP client...');
+      this.client.activate();
+      this.client.onConnect = () => {
+        console.log('[WebsocketService] STOMP connected via ensureConnected');
+        this.connectionSubject.next(true);
+        this.isConnecting = false;
+        // Resolve all pending operations
+        this.pendingTerminalOps.forEach(op => op());
+        this.pendingTerminalOps = [];
+        resolve();
+      };
+      this.client.onStompError = (frame) => {
+        console.error('[WebsocketService] STOMP error during ensureConnected:', frame);
+        this.isConnecting = false;
+        resolve(); // Resolve anyway; operations will fail gracefully
+      };
+    });
   }
 
   connect(username: string, sessionId: string) {
@@ -98,6 +136,73 @@ export class WebsocketService {
     this.client.onStompError = (frame) => {
       console.error('[WebsocketService] STOMP error:', frame);
     };
+  }
+
+  /**
+   * Subscribe to a terminal topic for a specific terminal sessionId.
+   * Returns a Promise that resolves with the subscription object.
+   */
+  subscribeTerminal(sessionId: string, callback: (msg: Message) => void): Promise<any> {
+    return this.ensureConnected().then(() => {
+      if (!this.client) {
+        console.error('[WebsocketService] Client not available after connect');
+        return null;
+      }
+      if (!this.client.connected) {
+        console.error('[WebsocketService] STOMP not connected yet for terminal subscribe');
+        return null;
+      }
+      try {
+        const sub = this.client.subscribe(`/topic/terminal/${sessionId}`, (message) => {
+          try {
+            callback(message);
+          } catch (e) {
+            console.error('[WebsocketService] Terminal callback error', e);
+          }
+        });
+        this.terminalSubscriptions.set(sessionId, sub);
+        console.log('[WebsocketService] Subscribed to /topic/terminal/' + sessionId);
+        return sub;
+      } catch (e) {
+        console.error('[WebsocketService] Failed to subscribe to terminal topic', e);
+        return null;
+      }
+    });
+  }
+
+  unsubscribeTerminal(sessionId: string) {
+    const sub = this.terminalSubscriptions.get(sessionId);
+    if (sub && sub.unsubscribe) {
+      try {
+        sub.unsubscribe();
+      } catch (e) {
+        console.warn('[WebsocketService] Error unsubscribing terminal', e);
+      }
+    }
+    this.terminalSubscriptions.delete(sessionId);
+  }
+
+  publishToTerminal(sessionId: string, payload: any) {
+    if (!this.client || !this.client.connected) {
+      console.error('[WebsocketService] STOMP client not connected - attempting to ensure connection first');
+      this.ensureConnected().then(() => {
+        if (this.client && this.client.connected) {
+          try {
+            this.client.publish({ destination: `/app/terminal/${sessionId}`, body: JSON.stringify(payload) });
+            console.log('[WebsocketService] Published to /app/terminal/' + sessionId, payload);
+          } catch (e) {
+            console.error('[WebsocketService] Failed to publish terminal message', e);
+          }
+        }
+      });
+      return;
+    }
+    try {
+      this.client.publish({ destination: `/app/terminal/${sessionId}`, body: JSON.stringify(payload) });
+      console.log('[WebsocketService] Published to /app/terminal/' + sessionId, payload);
+    } catch (e) {
+      console.error('[WebsocketService] Failed to publish terminal message', e);
+    }
   }
 
   sendMessage(sender: string, text: string, sessionId: string) {

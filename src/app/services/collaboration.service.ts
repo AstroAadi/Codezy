@@ -167,29 +167,39 @@ export class CollaborationService {
 
     // If there are path parts, we need to create/ensure folder structure
     if (parts.length > 0) {
-      let currentPath = '';
-      const folders: FileNode[] = parts.map(part => {
-        currentPath = currentPath ? `${currentPath}/${part}` : part;
-        return {
-          name: part,
+      // Build the folder structure from the root up with correct paths
+      let currentPath = parts[0];
+      const rootFolder: FileNode = {
+        name: parts[0],
+        type: 'folder',
+        path: currentPath,
+        children: [],
+        isExpanded: true
+      };
+
+      let currentFolder = rootFolder;
+
+      // Build nested folder structure with full path chaining
+      for (let i = 1; i < parts.length; i++) {
+        currentPath = `${currentPath}/${parts[i]}`;
+        const newFolder: FileNode = {
+          name: parts[i],
           type: 'folder',
           path: currentPath,
           children: [],
           isExpanded: true
         };
-      });
+        if (!currentFolder.children) currentFolder.children = [];
+        currentFolder.children.push(newFolder);
+        currentFolder = newFolder;
+      }
 
-      // Link the folders together
-      for (let i = 0; i < folders.length - 1; i++) {
-        folders[i].children = [folders[i + 1]];
-      }
-      
-      // Add the file to the last folder
-      if (folders.length > 0) {
-        folders[folders.length - 1].children = [fileNode];
-        // Emit the root folder which contains the entire structure
-        this.fileAddedSubject.next(folders[0]);
-      }
+      // Add the file to the deepest folder
+      if (!currentFolder.children) currentFolder.children = [];
+      currentFolder.children.push(fileNode);
+
+      // Emit the root folder which contains the entire structure
+      this.fileAddedSubject.next(rootFolder);
     } else {
       // Root-level file
       this.fileAddedSubject.next(fileNode);

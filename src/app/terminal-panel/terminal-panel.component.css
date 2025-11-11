@@ -1,0 +1,329 @@
+﻿:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.terminal-panel-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', monospace;
+  overflow: hidden;
+}
+
+.terminal-container {
+  flex: 1;
+  overflow: hidden;
+  background: #1e1e1e;
+  width: 100%;
+  position: relative;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.xterm {
+  width: 100% !important;
+  height: 100% !important;
+  padding: 8px;
+}
+
+/* Remove excessive overrides and let xterm.css do its job */
+::ng-deep .xterm {
+  background: #1e1e1e !important;
+}
+
+::ng-deep .xterm-viewport {
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+}
+
+::ng-deep .xterm-screen {
+  position: relative;
+}
+
+/* Custom scrollbar styling */
+::ng-deep .xterm-viewport::-webkit-scrollbar {
+  width: 10px;
+}
+
+::ng-deep .xterm-viewport::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+::ng-deep .xterm-viewport::-webkit-scrollbar-thumb {
+  background: #464647;
+  border-radius: 5px;
+}
+
+::ng-deep .xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+}
+
+/* Firefox scrollbar */
+::ng-deep .xterm-viewport {
+  scrollbar-width: thin;
+  scrollbar-color: #464647 #1e1e1e;
+}
+
+::ng-deep .xterm-selection {
+  background-color: rgba(122, 171, 255, 0.3) !important;
+}
+
+::ng-deep .xterm-cursor {
+  background: #d4d4d4 !important;
+  color: #1e1e1e !important;
+}
+
+.terminal-tabs {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #252526;
+  padding: 6px 8px;
+  border-bottom: 1px solid #3e3e42;
+  min-height: 35px;
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.tabs-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  flex: 1;
+  min-width: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #464647 #252526;
+}
+
+.tabs-left::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tabs-left::-webkit-scrollbar-track {
+  background: #252526;
+}
+
+.tabs-left::-webkit-scrollbar-thumb {
+  background: #464647;
+  border-radius: 3px;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #2d2d30;
+  color: #cccccc;
+  border: 1px solid #3e3e42;
+  border-bottom: none;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 4px 4px 0 0;
+  white-space: nowrap;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  
+}
+
+.tab:hover {
+  background: #3e3e42;
+  color: #e0e0e0;
+}
+
+.tab.active {
+  background: #1e1e1e;
+  color: #ffffff;
+  border-bottom: 2px solid #007acc;
+  border-color: #007acc #3e3e42 transparent #3e3e42;
+}
+
+.tab .close {
+  opacity: 0.7;
+  cursor: pointer;
+  font-weight: bold;
+  transition: opacity 0.2s;
+  padding: 0 4px;
+  margin-left: 4px;
+}
+
+.tab .close:hover {
+  opacity: 1;
+  color: #f48771;
+}
+
+.tab.add-tab {
+  padding: 6px 10px;
+  border: 1px dashed #3e3e42;
+  font-size: 16px;
+  min-width: 32px;
+  justify-content: center;
+}
+
+.tab.add-tab:hover:not(:disabled) {
+  background: #3e3e42;
+  border-style: solid;
+}
+
+.tab.add-tab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tabs-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-left: 12px;
+  border-left: 1px solid #3e3e42;
+  flex-shrink: 0;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  
+}
+
+.status-indicator.connected {
+  color: #4ec9b0;
+}
+
+.status-indicator.disconnected {
+  color: #f48771;
+}
+
+.status-indicator .dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  flex-shrink: 0;
+}
+
+.status-indicator.connected .dot {
+  background: #4ec9b0;
+  box-shadow: 0 0 5px rgba(78, 201, 176, 0.5);
+}
+
+.status-indicator.disconnected .dot {
+  background: #f48771;
+  animation: blink 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0.3;
+  }
+}
+
+.cwd-display {
+  font-size: 12px;
+  color: #9cdcfe;
+  font-family: monospace;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+  
+}
+
+.mode-selector {
+  background: #3c3c3c;
+  color: #d4d4d4;
+  border: 1px solid #3e3e42;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.mode-selector:hover {
+  background: #454545;
+  border-color: #555555;
+}
+
+.mode-selector:focus {
+  outline: none;
+  border-color: #007acc;
+  box-shadow: 0 0 3px rgba(0, 122, 204, 0.5);
+}
+
+.terminal-input {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: #252526;
+  border-top: 1px solid #3e3e42;
+  gap: 8px;
+  flex-shrink: 0;
+  min-height: 38px;
+  width: 100%;
+}
+
+.prompt-cwd {
+  font-family: monospace;
+  color: #9cdcfe;
+  font-size: 13px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  
+}
+
+.prompt-input {
+  flex: 1;
+  background: #3c3c3c;
+  border: 1px solid #555555;
+  color: #d4d4d4;
+  padding: 6px 8px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 13px;
+  outline: none;
+  min-width: 0;
+  transition: all 0.2s ease;
+}
+
+.prompt-input:focus {
+  border-color: #007acc;
+  box-shadow: 0 0 3px rgba(0, 122, 204, 0.5);
+  background: #2d2d30;
+}
+
+.prompt-input::placeholder {
+  color: #858585;
+}

@@ -15,6 +15,7 @@ import { SelectedFileService } from './services/selected-file.service';
 import { UserFileService } from './services/user-file.service';
 import { ThemeService } from './services/theme.service';
 import { HomeComponent } from './home/home.component';
+import { TerminalPanelComponent } from './terminal-panel/terminal-panel.component';
 
 @Component({
     selector: 'app-root',
@@ -26,7 +27,7 @@ import { HomeComponent } from './home/home.component';
         RouterModule,
         ProjectExplorerComponent,
         CodeEditorComponent,
-  
+        TerminalPanelComponent
     ],
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.css']
@@ -40,14 +41,15 @@ export class AppComponent implements OnInit {
   uploadedFiles: File[] = [];
   fileNodes: FileNode[] = [];
   selectedFile: FileNode | null = null;
+  selectedFolder: FileNode | null = null;
 
   // Add these if you still need them elsewhere, otherwise remove all references
   selectedFileContent: string | null = null;
   selectedFileName: string | null = null;
 
   code: string = '';
-  // outputText: string = '';
-  // activeBottomPanel: PanelType | null = null;
+  outputText: string = '';
+  activeBottomPanel: PanelType | null = null;
 
   onOutputChanged(newOutput: string) {
     this.outputText = newOutput;
@@ -92,10 +94,15 @@ onSessionModeSelected(mode: 'create' | 'join') {
   }
  
 
+  onSidebarFolderSelected(folder: FileNode) {
+  this.selectedFolder = folder;
+}
+  
+  // Handle file selection from the project explorer
   onSidebarFileSelected(file: FileNode) {
     this.selectedFile = file;
   }
-
+// Create a new file via toolbar
   onToolbarNewFile() {
     const name = prompt('Enter new file name:');
     if (name) {
@@ -111,6 +118,7 @@ onSessionModeSelected(mode: 'create' | 'join') {
       localStorage.setItem('selectedFile', JSON.stringify(newNode.path));
     }
   }
+  
 
   onToolbarAddFolder() {
     const name = prompt('Enter new folder name:');
@@ -232,8 +240,8 @@ onSessionModeSelected(mode: 'create' | 'join') {
     this.showResizeArrows = false;
   }
 
-  outputText: string = '';
-  activeBottomPanel: PanelType | null = null; // Start with panel closed
+  // outputText: string = '';
+  // activeBottomPanel: PanelType | null = null; // Start with panel closed
   selectedLanguage: string = 'python'; // Set default language
   // Change type here
   onToolbarLanguageChange(lang: string) {
