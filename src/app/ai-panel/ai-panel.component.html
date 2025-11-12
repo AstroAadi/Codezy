@@ -54,8 +54,8 @@
       ></textarea>
       <div class="input-actions">
         <select [(ngModel)]="selectedModel" class="model-select" title="Select AI model">
-          <option value="claude sonnet 4.5">claude sonnet 4</option>
-          <option value="Cortext">Cortext</option>
+          <option value="claude sonnet 4">claude sonnet 4</option>
+          <option value="Codex">Codex</option>
             </select>
             <button (click)="sendMessage()" [disabled]="!userInput.trim() || isProcessing" class="send-btn" title="Send message">
               <i class="fas fa-paper-plane" aria-hidden="true"></i>

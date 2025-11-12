@@ -1,29 +1,85 @@
 <div class="terminal-panel-root">
   <div class="terminal-tabs">
     <div class="tabs-left">
-      <button *ngFor="let t of terminals; let i = index" class="tab" [class.active]="i === activeTerminalIndex" (click)="switchToTerminal(i)">
-        <span class="tab-name">{{t.name}}</span>
-        <span class="close" (click)="closeTerminal(i); $event.stopPropagation()">×</span>
+      <button *ngFor="let t of terminals; let i = index" 
+              class="tab" 
+              [class.active]="i === activeTerminalIndex" 
+              (click)="switchToTerminal(i)">
+        <span class="tab-icon">
+          <i class="fas fa-terminal"></i>
+        </span>
+        <span class="tab-name" 
+              *ngIf="editingTabIndex !== i"
+              (dblclick)="startEditingTabName(i, $event)">
+          {{t.name}}
+        </span>
+        <input *ngIf="editingTabIndex === i"
+               class="tab-name-input"
+               [(ngModel)]="editingTabName"
+               (keydown.enter)="finishEditingTabName()"
+               (keydown.escape)="cancelEditingTabName()"
+               (blur)="finishEditingTabName()"
+               (click)="$event.stopPropagation()" />
+        <span class="close" 
+              (click)="closeTerminal(i); $event.stopPropagation()" 
+              title="Close Terminal">×</span>
       </button>
-      <button class="tab add-tab" (click)="createNewTerminal()" [disabled]="!connectionReady" title="New Terminal">
-        <span>+</span>
+      <button class="tab add-tab" 
+              (click)="createNewTerminal()" 
+              [disabled]="!connectionReady" 
+              title="New Terminal">
+        <i class="fas fa-plus"></i>
       </button>
     </div>
+    
     <div class="tabs-right">
-      <div class="status-indicator" [class.connected]="connectionReady" [class.disconnected]="!connectionReady">
+      <div class="terminal-actions">
+        <button class="action-btn" 
+                (click)="clearTerminal()" 
+                title="Clear Terminal"
+                [disabled]="terminals.length === 0">
+          <i class="fas fa-eraser"></i>
+        </button>
+        <button class="action-btn" 
+                (click)="copySelection()" 
+                title="Copy Selection"
+                [disabled]="terminals.length === 0">
+          <i class="fas fa-copy"></i>
+        </button>
+        <button class="action-btn" 
+                (click)="pasteFromClipboard()" 
+                title="Paste"
+                [disabled]="terminals.length === 0 || !terminals[activeTerminalIndex]?.isReady">
+          <i class="fas fa-paste"></i>
+        </button>
+      </div>
+      
+      <div class="status-indicator" 
+           [class.connected]="connectionReady" 
+           [class.disconnected]="!connectionReady">
         <span class="dot"></span>
         {{ connectionReady ? 'Connected' : 'Connecting...' }}
       </div>
-      <span class="cwd-display" *ngIf="terminals.length" title="Current Working Directory">
-        📁 {{ terminals[activeTerminalIndex]?.cwd || '/' }}
+      
+      <span class="cwd-display" 
+            *ngIf="terminals.length && terminals[activeTerminalIndex]" 
+            [title]="'Current Working Directory: ' + terminals[activeTerminalIndex]?.cwd">
+        <i class="fas fa-folder"></i> {{ terminals[activeTerminalIndex]?.cwd || '~' }}
       </span>
-      <!-- single backend-driven terminal mode; mode selector removed -->
+      
+      <span class="terminal-info" *ngIf="terminals.length">
+        <i class="fas fa-th"></i> {{activeTerminalIndex + 1}}/{{terminals.length}}
+      </span>
     </div>
   </div>
 
   <div class="terminal-container">
     <div #terminal class="xterm"></div>
+    <div class="terminal-overlay" *ngIf="!connectionReady">
+      <div class="overlay-content">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Connecting to terminal...</p>
+      </div>
+    </div>
   </div>
-
-  <!-- prompt input removed: terminal communicates directly with backend -->
 </div>
