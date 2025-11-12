@@ -21,6 +21,7 @@ export interface Collaborator {
 export class CollaborationService {
   private fileAddedSubject = new Subject<FileNode>();
   private fileStructureChangedSubject = new Subject<void>();
+  private fileRemovedSubject = new Subject<string>();
   private collaborators = new BehaviorSubject<Collaborator[]>([]);
   private activeCollaborators = new BehaviorSubject<number>(0);
   private currentSessionId: string | null = null;
@@ -30,9 +31,16 @@ export class CollaborationService {
 
   fileAdded$ = this.fileAddedSubject.asObservable();
   fileStructureChanged$ = this.fileStructureChangedSubject.asObservable();
+  fileRemoved$ = this.fileRemovedSubject.asObservable();
 
   notifyFileStructureChanged() {
     this.fileStructureChangedSubject.next();
+  }
+
+  removePath(path: string) {
+    // Emit removal event so other components (AppComponent / ProjectExplorer) can update their structures
+    this.fileRemovedSubject.next(path);
+    this.notifyFileStructureChanged();
   }
   
   // private injector: Injector;  // Lazy dependency injection

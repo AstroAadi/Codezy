@@ -5,6 +5,7 @@ import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { WebLinksAddon } from 'xterm-addon-web-links';
 import { WebsocketService } from '../services/websocket.service';
+import { CollaborationService } from '../services/collaboration.service';
 
 // NOTE: You need to install xterm addons:
 // npm install xterm-addon-fit xterm-addon-web-links
@@ -38,7 +39,7 @@ export class TerminalPanelComponent implements OnInit, AfterViewInit, OnDestroy,
   promptCommand: string = '';
   connectionReady: boolean = false;
 
-  constructor(private websocketService: WebsocketService) {}
+  constructor(private websocketService: WebsocketService, private collaborationService: CollaborationService) {}
 
   ngOnInit() {
     // Remove session ID logic
@@ -162,17 +163,12 @@ export class TerminalPanelComponent implements OnInit, AfterViewInit, OnDestroy,
       const active = this.terminals[this.activeTerminalIndex];
       if (!active) return;
 
-      if (active.mode === 'bash') {
-        // In bash mode, send directly to backend PTY
-        const msg = { 
-          type: 'terminal-input',
-          input: data
-        };
-        this.websocketService.publishToTerminal(active.sessionId, msg);
-      } else {
-        // In prompt mode, handle locally
-        this.handleLocalInput(data);
-      }
+      // Always forward keystrokes to backend PTY
+      const msg = {
+        type: 'terminal-input',
+        input: data
+      };
+      this.websocketService.publishToTerminal(active.sessionId, msg);
     });
 
     // Enable text selection and copying
@@ -268,14 +264,62 @@ export class TerminalPanelComponent implements OnInit, AfterViewInit, OnDestroy,
   }
 
   private publishCommandToSession(sessionId: string, command: string) {
-    let outgoing = command;
     const trimmed = command.trim();
-    
-    // Special handling for cd commands to track current directory
+
+    // Handle create/remove file/folder commands locally so Project Explorer updates immediately
+    try {
+      const active = this.terminals[this.activeTerminalIndex];
+      const cwd = (active && active.cwd) ? active.cwd : this.defaultDirectory;
+
+      // Helper to resolve a path relative to cwd
+      const resolvePath = (p: string) => {
+        if (!p) return cwd;
+        if (p.startsWith('/')) return p.replace(/\\/g, '/');
+        // join cwd and p
+        const base = cwd.endsWith('/') ? cwd.slice(0, -1) : cwd;
+        return `${base}/${p}`.replace(/\\/g, '/');
+      };
+
+      // mkdir (support -p)
+      if (/^mkdir(\s+-p)?\s+/.test(trimmed)) {
+        const parts = trimmed.split(/\s+/).slice(1);
+        for (const part of parts) {
+          const path = resolvePath(part);
+          // Create a placeholder file inside folder so folder shows up in explorer
+          const placeholder = path.endsWith('/') ? `${path}.keep` : `${path}/.keep`;
+          this.collaborationService.ensureFileExists(placeholder, '');
+        }
+      }
+
+      // touch -> create file
+      if (/^touch\s+/.test(trimmed)) {
+        const parts = trimmed.split(/\s+/).slice(1);
+        for (const p of parts) {
+          const path = resolvePath(p);
+          this.collaborationService.ensureFileExists(path, '');
+        }
+      }
+
+      // rmdir or rm -r or rm -rf -> remove path
+      if (/^(rmdir|rm)\b/.test(trimmed)) {
+        // Extract arguments after command flags
+        const tokens = trimmed.split(/\s+/).slice(1);
+  // remove flags like -r, -f, -rf, -fr
+  const targets = tokens.filter(t => !/^-/.test(t));
+        for (const t of targets) {
+          const path = resolvePath(t);
+          this.collaborationService.removePath(path);
+        }
+      }
+    } catch (e) {
+      console.warn('[Terminal] local file op failed:', e);
+    }
+
+    // Always forward the command to the backend so it actually executes
+    let outgoing = command;
     if (trimmed === 'cd' || trimmed.startsWith('cd ')) {
       outgoing = `${command} && echo __CWD__:$PWD`;
     }
-    
     const msg = { type: 'terminal', command: outgoing };
     this.websocketService.publishToTerminal(sessionId, msg);
   }
@@ -557,6 +601,14 @@ export class TerminalPanelComponent implements OnInit, AfterViewInit, OnDestroy,
     } else {
       // Switching to bash mode - notify backend if needed
       this.term.write('\r\n[Switched to Bash mode - direct PTY interaction]\r\n');
+    }
+
+    // Update terminal modes to Bash and Command Prompt
+    const currentMode = this.terminals[this.activeTerminalIndex]?.mode;
+    if (currentMode === 'bash') {
+      console.log('Bash terminal is active');
+    } else if (currentMode === 'cmd') {
+      console.log('Command Prompt terminal is active');
     }
   }
 }

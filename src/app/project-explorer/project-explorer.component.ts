@@ -1,4 +1,3 @@
-
 import { DOCUMENT } from '@angular/common';
 import { Component, EventEmitter, Inject, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -76,6 +75,10 @@ export class ProjectExplorerComponent {
     this.selectedNode = file;
     if (file.type === 'file') {
       this.fileSelected.emit(file);
+    }
+    // Prevent directory change on folder click
+    if (file.type === 'folder') {
+      console.log('Folder clicked, but directory remains unchanged.');
     }
   }
 
@@ -218,6 +221,14 @@ export class ProjectExplorerComponent {
     // Seed the explorer from localStorage so it mirrors the context picker
     this.reloadFromLocalStorage();
 
+    // Default all files and folders to project directory
+    this.files.forEach(file => {
+      file.path = '/project-directory/' + file.name;
+      if (file.children) {
+        this.updateChildPaths(file.children, '/project-directory/' + file.name);
+      }
+    });
+
     // Keep explorer in sync when any part of the app reports structure changes
     this.collaborationService.fileStructureChanged$.subscribe(() => {
       this.reloadFromLocalStorage();
@@ -310,4 +321,12 @@ export class ProjectExplorerComponent {
     }
   }
 
+  private updateChildPaths(children: FileNode[], parentPath: string) {
+    children.forEach(child => {
+      child.path = parentPath + '/' + child.name;
+      if (child.children) {
+        this.updateChildPaths(child.children, child.path);
+      }
+    });
+  }
 }

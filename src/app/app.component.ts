@@ -172,6 +172,16 @@ onSessionModeSelected(mode: 'create' | 'join') {
       }
     });
 
+    // Subscribe to file removed events (for deletion by collaborators / terminal)
+    this.collaborationService.fileRemoved$.subscribe((path: string) => {
+      if (!path) return;
+      this.removeNodeByPath(this.fileNodes, path);
+      // If the removed file was selected, clear selection
+      if (this.selectedFile && this.selectedFile.path === path) {
+        this.selectedFile = null;
+      }
+    });
+
     
     this.toolbarActions.saveFile.subscribe(() => {
       this.saveUserFile();
@@ -311,6 +321,21 @@ onRun() {
       }
     }
     return null;
+  }
+
+  private removeNodeByPath(nodes: FileNode[], targetPath: string): boolean {
+    const idx = nodes.findIndex(n => n.path === targetPath);
+    if (idx !== -1) {
+      nodes.splice(idx, 1);
+      return true;
+    }
+    for (const node of nodes) {
+      if (node.type === 'folder' && node.children) {
+        const removed = this.removeNodeByPath(node.children, targetPath);
+        if (removed) return true;
+      }
+    }
+    return false;
   }
   
   ngOnInit() {
