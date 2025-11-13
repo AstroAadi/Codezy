@@ -25,9 +25,8 @@ import { TerminalPanelComponent } from './terminal-panel/terminal-panel.componen
         ToolbarComponent,
         BottomPanelComponent,
         RouterModule,
-        ProjectExplorerComponent,
-        CodeEditorComponent,
-        TerminalPanelComponent
+  ProjectExplorerComponent,
+  CodeEditorComponent
     ],
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.css']

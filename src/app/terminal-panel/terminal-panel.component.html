@@ -46,10 +46,10 @@
                 [disabled]="terminals.length === 0">
           <i class="fas fa-copy"></i>
         </button>
-        <button class="action-btn" 
-                (click)="pasteFromClipboard()" 
-                title="Paste"
-                [disabled]="terminals.length === 0 || !terminals[activeTerminalIndex]?.isReady">
+  <button class="action-btn" 
+    (click)="pasteFromClipboard()" 
+    title="Paste"
+    [disabled]="terminals.length === 0 || !terminals[activeTerminalIndex].isReady">
           <i class="fas fa-paste"></i>
         </button>
       </div>
@@ -61,11 +61,11 @@
         {{ connectionReady ? 'Connected' : 'Connecting...' }}
       </div>
       
-      <span class="cwd-display" 
-            *ngIf="terminals.length && terminals[activeTerminalIndex]" 
-            [title]="'Current Working Directory: ' + terminals[activeTerminalIndex]?.cwd">
-        <i class="fas fa-folder"></i> {{ terminals[activeTerminalIndex]?.cwd || '~' }}
-      </span>
+  <span class="cwd-display" 
+    *ngIf="terminals.length && terminals[activeTerminalIndex]" 
+    [title]="'Current Working Directory: ' + terminals[activeTerminalIndex].cwd">
+    <i class="fas fa-folder"></i> {{ terminals[activeTerminalIndex].cwd || '~' }}
+  </span>
       
       <span class="terminal-info" *ngIf="terminals.length">
         <i class="fas fa-th"></i> {{activeTerminalIndex + 1}}/{{terminals.length}}

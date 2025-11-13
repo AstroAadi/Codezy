@@ -90,6 +90,14 @@
           }
         },
         "serve": {
+          "options": {
+            "allowedHosts": [
+              ".ngrok.io",
+              "localhost",
+              "127.0.0.1",
+              "all"]
+          },
+          
           "builder": "@angular/build:dev-server",
           "configurations": {
             "development": {
