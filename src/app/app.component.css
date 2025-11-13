@@ -69,7 +69,6 @@ app-code-editor {
   flex: 1;
   min-height: 0;
   position: relative;
-  margin-bottom: 48px; /* Space for bottom toolbar */
 }
 
 app-bottom-panel {

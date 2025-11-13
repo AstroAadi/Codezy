@@ -4,7 +4,7 @@ export const environment = {
   // wsTerminalUrl: 'wss://codezy-backend.onrender.com/terminal',
   // wsSignalUrl: 'wss://codezy-backend.onrender.com/signal'
   // apiUrl: 'http://localhost:8080',
-  apiAiUrl: 'https://f2e4256f986c.ngrok-free.app',
+  apiAiUrl: 'http://localhost:8000',
 
   // Use the STOMP SockJS endpoint registered by the backend (/ws)
   wsTerminalUrl: 'https://localhost:8080/terminal',

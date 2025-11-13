@@ -7,6 +7,7 @@ import { FitAddon } from 'xterm-addon-fit';
 import { WebLinksAddon } from 'xterm-addon-web-links';
 import { WebContainer } from '@webcontainer/api';
 import { CollaborationService } from '../services/collaboration.service';
+import { FileNode } from '../project-explorer/project-explorer.component';
 
 /**
  * Terminal Panel using WebContainers (StackBlitz Technology)
@@ -38,6 +39,8 @@ export class TerminalPanelComponent implements OnInit, AfterViewInit, OnDestroy,
   previewUrl: string = '';
   showPreview: boolean = false;
   isPreviewLoading: boolean = false;
+  safePreviewUrl: SafeResourceUrl | null = null;
+  private portMonitor: any = null;
 
   // Multi-terminal support
   terminals: Array<{
@@ -52,10 +55,11 @@ export class TerminalPanelComponent implements OnInit, AfterViewInit, OnDestroy,
   editingTabIndex: number = -1;
   editingTabName: string = '';
   isInitializing: boolean = false;
-  safePreviewUrl: null | undefined;
-  sanitizer: any;
 
-  constructor(private collaborationService: CollaborationService) {}
+  constructor(
+    private collaborationService: CollaborationService,
+    private sanitizer: DomSanitizer
+  ) {}
 
   ngOnInit() {
     // Will initialize in ngAfterViewInit
@@ -64,6 +68,7 @@ export class TerminalPanelComponent implements OnInit, AfterViewInit, OnDestroy,
   ngAfterViewInit() {
     this.initializeTerminal();
     this.initializeWebContainer();
+    // Port monitoring will start after WebContainer is ready
   }
 
   private initializeTerminal(): void {
@@ -157,6 +162,9 @@ export class TerminalPanelComponent implements OnInit, AfterViewInit, OnDestroy,
       
       // Create first terminal
       this.createNewTerminal();
+
+      // Start port monitoring AFTER WebContainer is ready
+      this.setupPortMonitoring();
       
     } catch (error: any) {
       console.error('[WebContainer] Failed to boot:', error);
@@ -175,59 +183,41 @@ export class TerminalPanelComponent implements OnInit, AfterViewInit, OnDestroy,
     if (!this.webContainerInstance) return;
 
     try {
-      // Convert project files to WebContainer file tree format
-      const fileTree: any = {};
-      
-      if (this.projectFiles && this.projectFiles.length > 0) {
-        this.buildFileTree(this.projectFiles, fileTree);
-      }
+        // Convert project files to WebContainer file tree format
+        const fileTree: any = {};
 
-      // Always add package.json if not present
-      if (!fileTree['package.json']) {
-        fileTree['package.json'] = {
-          file: {
-            contents: JSON.stringify({
-              name: 'web-project',
-              version: '1.0.0',
-              description: 'WebContainer project',
-              main: 'index.js',
-              scripts: {
-                start: 'node index.js',
-                dev: 'node index.js'
-              }
-            }, null, 2)
-          }
-        };
-      }
+        if (this.projectFiles && this.projectFiles.length > 0) {
+            this.buildFileTree(this.projectFiles, fileTree);
+        }
 
-      // Mount the file tree
-      await this.webContainerInstance.mount(fileTree);
-      console.log('[WebContainer] Files mounted:', Object.keys(fileTree));
-      
-      // Start watching for file changes (simplified approach)
-      this.setupFileChangePolling();
-      
-      // Write welcome file
-      try {
-        await this.webContainerInstance.fs.writeFile(
-          '/README.txt',
-          'Welcome to WebContainer Terminal!\n\n' +
-          'Your project files are mounted here.\n' +
-          'Use "ls" to see all files.\n' +
-          'Use "cat <filename>" to read files.\n' +
-          'Use "nano <filename>" to edit files.\n\n' +
-          'Try these commands:\n' +
-          '  ls              - List files\n' +
-          '  node --version  - Check Node.js version\n' +
-          '  npm install     - Install dependencies\n' +
-          '  npm start       - Run the project\n'
-        );
-      } catch (err) {
-        console.warn('[WebContainer] Could not create README:', err);
-      }
-      
+        // Mount the file tree
+        await this.webContainerInstance.mount(fileTree);
+        console.log('[WebContainer] Files mounted:', Object.keys(fileTree));
+
+        // Start watching for file changes (simplified approach)
+        this.setupFileChangePolling();
+
+        // Write welcome file
+        try {
+            await this.webContainerInstance.fs.writeFile(
+                '/README.txt',
+                'Welcome to WebContainer Terminal!\n\n' +
+                'Your project files are mounted here.\n' +
+                'Use "ls" to see all files.\n' +
+                'Use "cat <filename>" to read files.\n' +
+                'Use "nano <filename>" to edit files.\n\n' +
+                'Try these commands:\n' +
+                '  ls              - List files\n' +
+                '  node --version  - Check Node.js version\n' +
+                '  npm install     - Install dependencies\n' +
+                '  npm start       - Run the project\n'
+            );
+        } catch (err) {
+            console.warn('[WebContainer] Could not create README:', err);
+        }
+
     } catch (error) {
-      console.error('[WebContainer] Failed to mount files:', error);
+        console.error('[WebContainer] Failed to mount files:', error);
     }
   }
 
@@ -284,11 +274,21 @@ export class TerminalPanelComponent implements OnInit, AfterViewInit, OnDestroy,
   }
 
   // Simplified file change monitoring using polling instead of async iterator
-  private setupFileChangePolling() {
+  // Simplified file change monitoring using polling instead of async iterator
+  private async setupFileChangePolling() {
     if (!this.webContainerInstance) return;
 
-    // Store last modified times to detect changes
-    const fileStates = new Map<string, number>();
+    // Store known files AND directories to detect new ones
+    const knownPaths = new Set<string>();
+
+    // IMPORTANT: Initialize knownPaths with all currently mounted files to prevent duplicates
+    try {
+      const initialPaths = await this.scanWebContainerFiles('', this.webContainerInstance.fs);
+      initialPaths.forEach(path => knownPaths.add(path));
+      console.log('[WebContainer] Initialized file monitor with', knownPaths.size, 'existing paths');
+    } catch (error) {
+      console.error('[WebContainer] Failed to initialize known paths:', error);
+    }
 
     const pollInterval = setInterval(async () => {
       if (!this.webContainerInstance) {
@@ -297,17 +297,104 @@ export class TerminalPanelComponent implements OnInit, AfterViewInit, OnDestroy,
       }
 
       try {
-        // This is a simplified approach - in production you might want to
-        // track specific files or use a different change detection mechanism
-        // For now, we'll just log that monitoring is active
-        // console.log('[WebContainer] File monitoring active');
+        // Recursively scan for all files and directories in the WebContainer
+        const allPaths = await this.scanWebContainerFiles('', this.webContainerInstance.fs);
+        
+        // Find new paths (files or directories) that weren't there before
+        for (const filePath of allPaths) {
+          if (!knownPaths.has(filePath) && !filePath.startsWith('/proc')) {
+            knownPaths.add(filePath);
+            console.log('[WebContainer] New path detected:', filePath);
+            // New path detected - sync it to project explorer
+            await this.syncNewPathToExplorer(filePath);
+          }
+        }
+        
       } catch (error) {
         console.error('[WebContainer] File monitoring error:', error);
       }
-    }, 5000); // Check every 5 seconds
+    }, 2000); // Check every 2 seconds
 
     // Store the interval ID so we can clear it on destroy
     (this as any).fileMonitorInterval = pollInterval;
+  }
+
+  // Recursively scan WebContainer filesystem for all files AND directories
+  private async scanWebContainerFiles(basePath: string, fs: any): Promise<string[]> {
+    const paths: string[] = [];
+    // Only ignore .git, .cache, README.txt (do NOT ignore node_modules)
+    const ignore = ['.git', '.cache', 'README.txt'];
+
+    try {
+      const entries = await fs.readdir(basePath || '/', { withFileTypes: true });
+      
+      for (const entry of entries) {
+        const fullPath = basePath ? `${basePath}/${entry.name}` : `/${entry.name}`;
+        
+        if (ignore.includes(entry.name)) continue;
+        
+        if (entry.isDirectory?.()) {
+          // Add directory to paths
+          paths.push(fullPath);
+          // Recursively scan subdirectories
+          const subPaths = await this.scanWebContainerFiles(fullPath, fs);
+          paths.push(...subPaths);
+        } else if (entry.isFile?.()) {
+          paths.push(fullPath);
+        }
+      }
+    } catch (error) {
+      console.warn(`[WebContainer] Failed to scan ${basePath}:`, error);
+    }
+    
+    return paths;
+  }
+
+  // Sync newly created file or directory to project explorer via collaboration service
+  private async syncNewPathToExplorer(filePath: string) {
+    try {
+      // Skip system paths and already synced paths
+      if (filePath.startsWith('/proc') || filePath.startsWith('/sys')) {
+        return;
+      }
+      let isDirectory = false;
+      let content: string = '';
+      try {
+        // Get parent directory and entry name
+        const lastSlash = filePath.lastIndexOf('/');
+        const parentDir = lastSlash > 0 ? filePath.substring(0, lastSlash) || '/' : '/';
+        const entryName = filePath.substring(lastSlash + 1);
+        const entries = await this.webContainerInstance?.fs.readdir(parentDir, { withFileTypes: true });
+        if (entries) {
+          const entry = entries.find((e: any) => e.name === entryName);
+          if (entry) {
+            if (entry.isDirectory?.()) {
+              isDirectory = true;
+            } else if (entry.isFile?.()) {
+              isDirectory = false;
+              content = await this.webContainerInstance?.fs.readFile(filePath, 'utf-8') || '';
+            }
+          }
+        }
+      } catch (error) {
+        // Fallback: try reading as file
+        try {
+          content = await this.webContainerInstance?.fs.readFile(filePath, 'utf-8') || '';
+          isDirectory = false;
+        } catch {
+          isDirectory = true;
+        }
+      }
+      if (isDirectory) {
+        this.collaborationService.ensureFolderExists(filePath);
+        console.log('[WebContainer] Synced new folder to explorer:', filePath);
+      } else {
+        this.collaborationService.ensureFileExists(filePath, content);
+        console.log('[WebContainer] Synced new file to explorer:', filePath);
+      }
+    } catch (error) {
+      console.error('[WebContainer] Failed to sync path:', filePath, error);
+    }
   }
 
   // Public method to update a file in WebContainer (called from project explorer)
@@ -349,11 +436,20 @@ export class TerminalPanelComponent implements OnInit, AfterViewInit, OnDestroy,
   }
 
   private setupTerminalHandlers(): void {
-    // Handle copy/paste
+    // Handle keyboard events
     this.term.attachCustomKeyEventHandler((event: KeyboardEvent) => {
-      // Allow Ctrl+C for copying (when text is selected)
-      if (event.ctrlKey && event.key === 'c' && this.term.hasSelection()) {
-        document.execCommand('copy');
+      // Handle Ctrl+C - send interrupt signal to running process
+      if (event.ctrlKey && event.key === 'c') {
+        event.preventDefault();
+        const active = this.terminals[this.activeTerminalIndex];
+        if (active && active.inputWriter && active.isReady) {
+          // Send Ctrl+C (ASCII code 3) to the shell process
+          active.inputWriter.write('\u0003');
+        }
+        // Also copy if text is selected
+        if (this.term.hasSelection()) {
+          document.execCommand('copy');
+        }
         return false;
       }
       
@@ -393,6 +489,11 @@ export class TerminalPanelComponent implements OnInit, AfterViewInit, OnDestroy,
     // Clear file monitoring interval
     if ((this as any).fileMonitorInterval) {
       clearInterval((this as any).fileMonitorInterval);
+    }
+
+    // Clear port monitoring interval
+    if (this.portMonitor) {
+      clearInterval(this.portMonitor);
     }
 
     // Abort file watching if active
@@ -671,11 +772,27 @@ export class TerminalPanelComponent implements OnInit, AfterViewInit, OnDestroy,
     this.safePreviewUrl = null;
     
     setTimeout(() => {
-      this.safePreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.previewUrl + '?t=' + Date.now());
+      const url = this.previewUrl + (this.previewUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+      this.safePreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
       setTimeout(() => {
         this.isPreviewLoading = false;
       }, 1000);
     }, 100);
+  }
+
+  // Monitor for port listening (server startup) to show preview
+  private setupPortMonitoring() {
+    if (this.portMonitor) return;
+    if (!this.webContainerInstance) return;
+    // Listen for server-ready event from WebContainer
+    this.webContainerInstance.on('server-ready', (port: number, url: string) => {
+      if (!this.previewUrl) {
+        this.previewUrl = url;
+        this.safePreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+        this.showPreview = true;
+        console.log('[WebContainer] Preview available at', url);
+      }
+    });
   }
 
   public openPreviewInNewTab() {

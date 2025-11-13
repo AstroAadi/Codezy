@@ -234,33 +234,97 @@ export class ProjectExplorerComponent {
       this.reloadFromLocalStorage();
     });
 
-    // Subscribe to fileAdded$ and simply reload from localStorage
-    // This keeps the explorer in lock-step with the context picker
-    this.collaborationService.fileAdded$.subscribe(() => {
-      this.reloadFromLocalStorage();
+    // Subscribe to fileAdded$ and merge new files/folders into the tree
+    this.collaborationService.fileAdded$.subscribe((newNode: FileNode) => {
+      if (newNode) {
+        // Merge the newly added node into the existing file tree
+        this.mergeNodeIntoStructure(this.files, newNode);
+        // Save to localStorage
+        this.saveToLocalStorage();
+      }
     });
   }
 
   private mergeNodeIntoStructure(targetArray: FileNode[], nodeToMerge: FileNode) {
+    // Check if node already exists at this level (avoid duplicates)
     const existingNode = targetArray.find(n => n.path === nodeToMerge.path);
     
     if (!existingNode) {
-      // If the node doesn't exist at this level, add it
-      targetArray.push(nodeToMerge);
+      // If the node doesn't exist at this level, check if we need to add it to a parent
+      if (nodeToMerge.type === 'folder' || (nodeToMerge.type === 'file' && nodeToMerge.path.includes('/'))) {
+        const lastSlash = nodeToMerge.path.lastIndexOf('/');
+        if (lastSlash > 0) {
+          // Has a parent path
+          const parentPath = nodeToMerge.path.substring(0, lastSlash);
+          const parentName = parentPath.substring(parentPath.lastIndexOf('/') + 1);
+          
+          // Find the parent node
+          let parentNode = this.findNodeByPath(targetArray, parentPath);
+          
+          if (!parentNode) {
+            // Parent doesn't exist, need to create it first
+            const parentToCreate: FileNode = {
+              name: parentName,
+              type: 'folder',
+              path: parentPath,
+              children: [],
+              isExpanded: true
+            };
+            // Recursively merge parent
+            this.mergeNodeIntoStructure(targetArray, parentToCreate);
+            // Find parent again after creation
+            parentNode = this.findNodeByPath(targetArray, parentPath);
+          }
+          
+          // Add node to parent if it doesn't already exist there
+          if (parentNode && parentNode.type === 'folder') {
+            if (!parentNode.children) parentNode.children = [];
+            if (!parentNode.children.find(c => c.path === nodeToMerge.path)) {
+              parentNode.children.push(nodeToMerge);
+              if (nodeToMerge.type === 'folder') {
+                parentNode.isExpanded = true;
+              }
+            }
+          }
+        } else {
+          // Root level node (no parent path)
+          targetArray.push(nodeToMerge);
+        }
+      } else {
+        // Simple file at root level
+        targetArray.push(nodeToMerge);
+      }
     } else {
-      // If it exists and both are folders, merge their children
+      // Node exists - if both are folders, merge their children
       if (existingNode.type === 'folder' && nodeToMerge.type === 'folder') {
         existingNode.isExpanded = true;
         if (!existingNode.children) {
           existingNode.children = [];
         }
         
-        // Recursively merge children
+        // Recursively merge children (avoiding duplicates)
         nodeToMerge.children?.forEach(child => {
-          this.mergeNodeIntoStructure(existingNode.children!, child);
+          if (!existingNode.children!.find(c => c.path === child.path)) {
+            this.mergeNodeIntoStructure(existingNode.children!, child);
+          }
         });
+      } else if (existingNode.type === 'file' && nodeToMerge.type === 'file') {
+        // Update file content if it has changed
+        existingNode.content = nodeToMerge.content || existingNode.content;
       }
     }
+  }
+
+  // Find node by path in the tree
+  private findNodeByPath(nodes: FileNode[], path: string): FileNode | null {
+    for (const node of nodes) {
+      if (node.path === path) return node;
+      if (node.type === 'folder' && node.children) {
+        const found = this.findNodeByPath(node.children, path);
+        if (found) return found;
+      }
+    }
+    return null;
   }
 
   findFileByPath(nodes: FileNode[], path: string): FileNode | null {
