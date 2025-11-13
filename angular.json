@@ -90,6 +90,12 @@
           }
         },
         "serve": {
+          "options": {
+            "headers": {
+              "Cross-Origin-Embedder-Policy": "require-corp",
+              "Cross-Origin-Opener-Policy": "same-origin"
+            }
+          },
           "builder": "@angular/build:dev-server",
           "configurations": {
             "development": {
