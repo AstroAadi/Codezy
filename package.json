@@ -20,6 +20,7 @@
     "@ctrl/ngx-codemirror": "^7.0.0",
     "@fortawesome/fontawesome-free": "^6.7.2",
     "@stomp/stompjs": "^7.0.1",
+    "@webcontainer/api": "^1.6.1",
     "bootstrap": "^5.3.7",
     "bootstrap-icons": "^1.13.1",
     "codemirror": "^5.65.19",
@@ -32,6 +33,7 @@
     "xterm-addon-fit": "^0.8.0",
     "xterm-addon-web-links": "^0.9.0",
     "zone.js": "~0.15.1"
+    
   },
   "devDependencies": {
     "@angular/build": "^19.2.13",
