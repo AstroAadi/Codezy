@@ -2,7 +2,7 @@
     display: none; /* Hidden by default */
     flex-direction: column;
     background-color: #2b2b2b;
-    height: 100%;
+    height: calc(100% - 48px);
     width: 100%;
     min-height: 0;
     flex: 1;
@@ -17,15 +17,14 @@
   :host {
     display: flex;
     flex-direction: column;
-    height: 348px; /* Fixed total height including toolbar */
     position: absolute;
-    bottom: 0;
+    bottom: 48px; /* Stop above bottom toolbar */
     left: 0;
-    right: 0;
+    right: 0; /* Extend full width to right edge */
     background-color: #2b2b2b;
     z-index: 1000;
-    width: 100%;
     min-height: 0;
+    box-sizing: border-box;
   }
 
   .panel-content {
@@ -60,29 +59,7 @@
   }
 
 
-  .panel-resize-bar {
-    position: absolute;
-    top: -6px;
-    left: 0;
-    right: 0;
-    height: 12px;
-    cursor: ns-resize;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: transparent;
-    z-index: 10;
-  }
-
-  .panel-resize-bar:hover {
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .panel-resize-bar .resize-arrow {
-    color: #666;
-    font-size: 14px;
-    pointer-events: none;
-  }
+  
   
   .content-wrapper {
     padding: 12px;
@@ -95,80 +72,9 @@
     overflow-x: hidden;
   }
   
-  .bottom-toolbar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: #3c3f41;
-    border-top: 1px solid #323232;
-    padding: 4px;
-    display: flex;
-    justify-content: flex-start;
-    height: 48px;
-    z-index: 1001;
-  }
+  
 
-  .btn-group {
-    display: flex;
-    gap: 4px;
-  }
-
-  .btn-tool {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 8px;
-    background: transparent;
-    border: none;
-    color: #afb1b3;
-    cursor: pointer;
-  }
-
-  .btn-tool:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .btn-tool.active {
-    background-color: rgba(255, 255, 255, 0.15);
-  }
   
-  .btn-tool {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: 0;
-    background-color: transparent;
-    border: none;
-    color: #afb1b3;
-  }
-  
-  .btn-tool:hover {
-    background-color: #4c5052;
-    color: #fff;
-  }
-  
-  .btn-tool.active {
-    background-color: #007acc; /* Example active background color */
-    color: #fff;
-  }
-  
-  .tool-label {
-    font-size: 12px;
-  }
-  
-  .btn-group {
-    display: flex;
-  }
-  
-  .btn-group .btn {
-    border-right: 1px solid #323232;
-  }
-  
-  .btn-group .btn:last-child {
-    border-right: none;
-  }
   .panel-resize-bar {
     position: absolute;
     top: 0;
@@ -186,3 +92,14 @@
     color: #afb1b3;
     pointer-events: none;
   }
+/* .bottom-toolbar {
+    height: 48px;
+    display: flex;
+    flex-direction: column;
+    background-color: #2b2b2b;
+    width: 100%;
+    min-height: 0;
+    flex: 1;
+    border-top: 1px solid #404040;
+    overflow: hidden;
+  } */

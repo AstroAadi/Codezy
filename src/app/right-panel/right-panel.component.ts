@@ -1,4 +1,4 @@
-import { Component, HostBinding } from '@angular/core';
+import { Component, HostBinding, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ChatComponent } from '../chat/chat.component';
 import { Router, RouterModule } from '@angular/router';
@@ -16,6 +16,7 @@ interface PanelState {
 type PanelType = 'collaborator' | 'chat' | 'video' | 'ai';
 
 @Component({
+    standalone: true,
     selector: 'app-right-panel',
     imports: [CommonModule, ChatComponent, CollaboratorComponent, RouterModule, VideoCallComponent, AiPanelComponent],
     templateUrl: './right-panel.component.html',
@@ -37,6 +38,9 @@ export class RightPanelComponent {
   };
 
   activePanel: PanelType | null = null;
+    get panelWidth(): string {
+    return this.activePanel ? `${this.panels[this.activePanel].width}px` : '0px';
+  }
   private isDragging = false;
   private startX = 0;
   private startWidth = 0;
@@ -49,12 +53,6 @@ export class RightPanelComponent {
   constructor(private router: Router, private auth: AuthService) {}
 
   onPanelClick(panelId: PanelType): void {
-    // Check authentication before toggling
-    // if (!this.auth.isLoggedIn()) { // Adjust this check to your AuthService
-    //   alert('Login first to access special features!!!');
-    //   this.router.navigate(['/login']);
-    //   return;
-    // }
     this.togglePanel(panelId);
     // Optionally update query param for panel state
     this.router.navigate([], {
@@ -69,6 +67,7 @@ export class RightPanelComponent {
       this.panels[panelId].isOpen = false;
       this.activePanel = null;
       console.log(`Panel ${panelId} closed. activePanel: ${this.activePanel}`);
+      
     } else {
       Object.keys(this.panels).forEach(key => {
         this.panels[key as PanelType].isOpen = false;
@@ -76,7 +75,7 @@ export class RightPanelComponent {
       
       this.panels[panelId].isOpen = true;
       this.activePanel = panelId;
-      console.log(`Panel ${panelId} opened. activePanel: ${this.activePanel}`);
+     
     }
   }
 
@@ -94,9 +93,10 @@ export class RightPanelComponent {
 
   private resize = (event: MouseEvent): void => {
     if (this.isDragging && this.activePanel) {
-      const diff = event.clientX - this.startX;
-      const newWidth = Math.max(200, Math.min(window.innerWidth - 200, this.startWidth - diff));
+      const diff = this.startX - event.clientX;
+      const newWidth = Math.max(200, Math.min(window.innerWidth - 200 - 48, this.startWidth + diff));
       this.panels[this.activePanel].width = newWidth;
+      // this.layoutService.rightPanelWidth.next(newWidth);
     }
   }
 

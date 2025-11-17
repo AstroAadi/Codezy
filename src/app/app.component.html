@@ -1,4 +1,5 @@
 <ng-container *ngIf="isMainLayout">
+  
   <app-navbar></app-navbar>
   <app-toolbar
     (toggleExplorer)="toggleExplorer()"
@@ -8,7 +9,9 @@
     (languageChange)="onToolbarLanguageChange($event)"
     (run)="onRun()"
   ></app-toolbar>
+  
   <div class="main-layout">
+    <app-right-panel></app-right-panel>
     <div class="sidebar-area"
          [style.width.px]="isExplorerOpen ? explorerWidth : 0"
          [class.closed]="!isExplorerOpen"
@@ -32,7 +35,7 @@
         <span class="resize-arrow" *ngIf="showResizeArrows">&#x2194;</span>
       </div>
     </div>
-    <div class="content-area" [class.with-bottom-panel]="!!activeBottomPanel">
+    <div class="content-area" [class.with-bottom-panel]="!!activeBottomPanel" [style.margin-right.px]="rightMargin">
       <app-code-editor [file]="selectedFile" (codeChange)="onCodeChanged($event)"></app-code-editor>
       <app-bottom-panel
         [outputText]="outputText"
@@ -42,6 +45,8 @@
         (activePanelChange)="onBottomPanelToggle($event)">
       </app-bottom-panel>
     </div>
+    
   </div>
+  
 </ng-container>
 <router-outlet *ngIf="!isMainLayout"></router-outlet>

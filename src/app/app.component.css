@@ -76,20 +76,30 @@ app-bottom-panel {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 48px; /* Only toolbar height by default */
   background-color: #2b2b2b;
   border-top: 1px solid #404040;
   z-index: 1000;
   display: block;
   transition: height 0.3s ease;
+  box-sizing: border-box;
 }
 
 .content-area.with-bottom-panel {
-  padding-bottom: 348px; /* Full panel height when active */
+  /* Removed fixed padding - handled dynamically */
 }
 
 .content-area.with-bottom-panel app-bottom-panel {
-  height: 348px; /* Expand to full height when panel is active */
+  /* Removed fixed height - handled dynamically */
+}
+
+app-right-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 360px;
+  height: 100%;
+  z-index: 1001;
+  display: flex;
 }
 
 .sidebar-resize-bar:hover,
@@ -106,9 +116,7 @@ app-bottom-panel {
 .content-area::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
 }
-.content-area.with-right-panel {
-  margin-right: 300px;
-}
+
 
 body.dark-theme {
   background: #23272e !important;
