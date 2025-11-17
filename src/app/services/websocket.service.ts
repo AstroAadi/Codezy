@@ -280,12 +280,12 @@ broadcastStartCall(sessionId: string) {
     console.error('[WebsocketService] WebSocket not connected');
     return;
   }
-  const signalSocket = new WebSocket(`ws://localhost:8081/signal/${sessionId}`);
+  const signalSocket = new WebSocket(`ws://localhost:8080/signal/${sessionId}`);
   
   signalSocket.onopen = () => {
     console.log('[WebsocketService] Signal WebSocket connected');
     this.client.publish({
-      destination: `wss://codezy-backend-185224543792.asia-south2.run.app/signal/${sessionId}`,
+      destination: `ws://localhost:8080/signal/${sessionId}`,
       body: JSON.stringify({ sessionId })
     });
   };
@@ -303,7 +303,7 @@ broadcastStartCall(sessionId: string) {
 
 onStartCall(): Observable<void> {
   return new Observable(observer => {
-    this.client.subscribe(`wss://codezy-backend-185224543792.asia-south2.run.app/signal/${this.currentSessionId}`, () => {
+    this.client.subscribe(`ws://localhost:8080/signal/${this.currentSessionId}`, () => {
       observer.next();
     });
   });
